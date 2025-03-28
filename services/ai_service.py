@@ -1,13 +1,41 @@
 import os
 import json
 import logging
-from openai import OpenAI
+import requests
+
+# Optional import of OpenAI
+try:
+    from openai import OpenAI
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
-# Initialize OpenAI client
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
-openai = OpenAI(api_key=OPENAI_API_KEY)
+# AI Model Configuration - read from environment
+AI_MODEL_TYPE = os.environ.get("AI_MODEL_TYPE", "openai").lower()  # Default to OpenAI if not specified
+HUGGINGFACE_MODEL = os.environ.get("HUGGINGFACE_MODEL", "mistral")  # Default Hugging Face model
+
+# Initialize OpenAI client if available and selected
+if AI_MODEL_TYPE == "openai" and OPENAI_AVAILABLE:
+    OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+    if OPENAI_API_KEY:
+        openai = OpenAI(api_key=OPENAI_API_KEY)
+    else:
+        logger.warning("OPENAI_API_KEY not found in environment variables")
+
+# Initialize Hugging Face setup if selected
+if AI_MODEL_TYPE == "huggingface":
+    HUGGINGFACE_API_KEY = os.environ.get("HUGGINGFACE_API_KEY")
+    if not HUGGINGFACE_API_KEY:
+        logger.warning("HUGGINGFACE_API_KEY not found in environment variables")
+    
+    # Model options for Hugging Face
+    HUGGINGFACE_MODEL_OPTIONS = {
+        "deepseek": "deepseek-ai/deepseek-coder-33b-instruct",
+        "llama3": "meta-llama/Llama-3-8b-chat-hf",
+        "mistral": "mistralai/Mixtral-8x7B-Instruct-v0.1"
+    }
 
 # Prompt templates
 PROMPT_TEMPLATES = {
@@ -89,9 +117,30 @@ DOCUMENT CONTENT:
 
 def generate_insights(content):
     """
-    Generate structured insights from document content using OpenAI GPT
+    Generate structured insights from document content using the configured AI model
     Returns a dictionary mapping insight categories to their content
     """
+    # Choose the appropriate model based on configuration
+    if AI_MODEL_TYPE == "openai" and OPENAI_AVAILABLE:
+        return generate_insights_with_openai(content)
+    elif AI_MODEL_TYPE == "huggingface":
+        return generate_insights_with_huggingface(content)
+    else:
+        logger.error(f"Invalid AI model type: {AI_MODEL_TYPE}")
+        return {
+            'business_summary': "<p>AI model configuration error. Please check server logs.</p>",
+            'moat': "<p>AI model configuration error. Please check server logs.</p>",
+            'financial': "<p>AI model configuration error. Please check server logs.</p>",
+            'management': "<p>AI model configuration error. Please check server logs.</p>"
+        }
+
+def generate_insights_with_openai(content):
+    """
+    Generate insights using OpenAI's API
+    """
+    if not OPENAI_API_KEY:
+        return {category: "<p>OpenAI API key not configured.</p>" for category in PROMPT_TEMPLATES.keys()}
+    
     insights = {}
     
     # Process each insight category with its own prompt
@@ -117,11 +166,124 @@ def generate_insights(content):
             insight_content = response.choices[0].message.content
             insights[category] = insight_content
             
-            logger.info(f"Successfully generated {category} insight")
+            logger.info(f"Successfully generated {category} insight with OpenAI")
             
         except Exception as e:
-            logger.error(f"Error generating {category} insight: {str(e)}")
+            logger.error(f"Error generating {category} insight with OpenAI: {str(e)}")
             # Provide a fallback message for failed insights
             insights[category] = f"<p>Unable to generate {category} insight. Error: {str(e)}</p>"
+    
+    return insights
+
+def generate_insights_with_huggingface(content):
+    """
+    Generate insights using Hugging Face's API
+    """
+    if not os.environ.get("HUGGINGFACE_API_KEY"):
+        return {category: "<p>Hugging Face API key not configured.</p>" for category in PROMPT_TEMPLATES.keys()}
+    
+    # Combine all prompts into a single comprehensive prompt for efficiency
+    combined_prompt = """
+    Analyze the following document content and extract structured insights about the company 
+    using value investing principles (Benjamin Graham/Warren Buffett approach).
+    
+    Format your response as HTML sections with these headings:
+    
+    <h4>Business Summary</h4>
+    [Explain what the company does, its industry, and customers]
+    
+    <h4>Competitive Moat</h4>
+    [Any competitive advantages, barriers to entry, brand strength]
+    
+    <h4>Financial Health</h4>
+    [Key insights about revenue, profitability, debt levels, cash flow]
+    
+    <h4>Management Analysis</h4>
+    [Leadership quality, capital allocation, integrity]
+    
+    DOCUMENT CONTENT:
+    {content}
+    """
+    
+    insights = {}
+    
+    try:
+        # Select the model to use
+        model_name = HUGGINGFACE_MODEL_OPTIONS.get(HUGGINGFACE_MODEL, HUGGINGFACE_MODEL_OPTIONS["mistral"])
+        
+        # Set up API call
+        headers = {
+            "Authorization": f"Bearer {os.environ.get('HUGGINGFACE_API_KEY')}",
+            "Content-Type": "application/json"
+        }
+        
+        # Prepare the API call
+        API_URL = f"https://api-inference.huggingface.co/models/{model_name}"
+        
+        payload = {
+            "inputs": combined_prompt.format(content=content[:10000]),  # Smaller content limit for open source models
+            "parameters": {
+                "max_new_tokens": 1500,
+                "temperature": 0.3,
+                "top_p": 0.95,
+                "return_full_text": False
+            }
+        }
+        
+        # Make the request
+        response = requests.post(API_URL, headers=headers, json=payload)
+        
+        if response.status_code == 200:
+            # Parse the response (format varies by model)
+            try:
+                result = response.json()
+                
+                # Extract the generated text (format depends on the model)
+                if isinstance(result, list) and len(result) > 0:
+                    if "generated_text" in result[0]:
+                        raw_output = result[0]["generated_text"]
+                    else:
+                        raw_output = result[0]
+                else:
+                    raw_output = result
+                
+                # Extract sections from the HTML
+                raw_html = raw_output if isinstance(raw_output, str) else str(raw_output)
+                
+                # Very basic HTML section extraction
+                if "<h4>Business Summary</h4>" in raw_html:
+                    # The model returned correctly formatted HTML sections
+                    business_start = raw_html.find("<h4>Business Summary</h4>")
+                    moat_start = raw_html.find("<h4>Competitive Moat</h4>")
+                    financial_start = raw_html.find("<h4>Financial Health</h4>")
+                    management_start = raw_html.find("<h4>Management Analysis</h4>")
+                    
+                    insights["business_summary"] = raw_html[business_start:moat_start].strip() if moat_start > 0 else "<p>Unable to extract business summary.</p>"
+                    insights["moat"] = raw_html[moat_start:financial_start].strip() if financial_start > 0 else "<p>Unable to extract competitive moat information.</p>"
+                    insights["financial"] = raw_html[financial_start:management_start].strip() if management_start > 0 else "<p>Unable to extract financial information.</p>"
+                    insights["management"] = raw_html[management_start:].strip() if management_start > 0 else "<p>Unable to extract management information.</p>"
+                else:
+                    # Model didn't format as expected, use the entire output as business summary
+                    logger.warning("Hugging Face model did not return expected HTML sections")
+                    insights["business_summary"] = f"<p>{raw_html}</p>"
+                    insights["moat"] = "<p>The model did not generate properly structured insights.</p>"
+                    insights["financial"] = "<p>The model did not generate properly structured insights.</p>"
+                    insights["management"] = "<p>The model did not generate properly structured insights.</p>"
+                
+                logger.info("Successfully generated insights with Hugging Face")
+                
+            except Exception as parsing_error:
+                logger.error(f"Error parsing Hugging Face response: {str(parsing_error)}")
+                for category in PROMPT_TEMPLATES.keys():
+                    insights[category] = f"<p>Error parsing model response: {str(parsing_error)}</p>"
+        else:
+            logger.error(f"Hugging Face API error: {response.status_code} - {response.text}")
+            for category in PROMPT_TEMPLATES.keys():
+                insights[category] = f"<p>Hugging Face API error: {response.status_code}</p>"
+                
+    except Exception as e:
+        logger.error(f"Error calling Hugging Face API: {str(e)}")
+        for category in PROMPT_TEMPLATES.keys():
+            insights[category] = f"<p>Error calling Hugging Face API: {str(e)}</p>"
     
     return insights

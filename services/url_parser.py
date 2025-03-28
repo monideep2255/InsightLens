@@ -18,7 +18,6 @@ def extract_url_content(url):
             from services.pdf_parser import extract_pdf_content
             import tempfile
             import os
-            import requests
             
             # Create a temporary file to store the downloaded PDF
             with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp:
