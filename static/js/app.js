@@ -85,13 +85,17 @@ document.addEventListener('DOMContentLoaded', function() {
         loadingBackdrop.classList.add('d-none');
     }
     
-    // Show SEC EDGAR option by default
+    // Variables for input options and containers
+    const urlOption = document.getElementById('url-option');
+    const fileOption = document.getElementById('file-option');
     const secOption = document.getElementById('sec-option');
+    const urlContainer = document.getElementById('url-container');
+    const fileContainer = document.getElementById('file-container');
     const secContainer = document.getElementById('sec-container');
     const secInfo = document.getElementById('sec-info');
-    const fileContainer = document.getElementById('file-container');
     const uploadButton = document.getElementById('upload-button');
     
+    // Show SEC EDGAR option by default
     if (secOption && secOption.checked) {
         secContainer.classList.remove('d-none');
         secInfo.classList.remove('d-none');
@@ -196,13 +200,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Toggle between URL, File, and SEC EDGAR options
-    const urlOption = document.getElementById('url-option');
-    const fileOption = document.getElementById('file-option');
-    const secOption = document.getElementById('sec-option');
-    const urlContainer = document.getElementById('url-container');
-    const fileContainer = document.getElementById('file-container');
-    const secContainer = document.getElementById('sec-container');
-    const secInfo = document.getElementById('sec-info');
     
     if (urlOption && fileOption && secOption) {
         urlOption.addEventListener('change', function() {
