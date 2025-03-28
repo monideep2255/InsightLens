@@ -1,4 +1,9 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
     // Theme toggling functionality
     const themeToggleBtn = document.getElementById('theme-toggle');
     const darkIcon = document.getElementById('dark-icon');
@@ -78,6 +83,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // Hide loading backdrop on initial page load
     if (loadingBackdrop) {
         loadingBackdrop.classList.add('d-none');
+    }
+    
+    // Show SEC EDGAR option by default
+    const secOption = document.getElementById('sec-option');
+    const secContainer = document.getElementById('sec-container');
+    const secInfo = document.getElementById('sec-info');
+    const fileContainer = document.getElementById('file-container');
+    const uploadButton = document.getElementById('upload-button');
+    
+    if (secOption && secOption.checked) {
+        secContainer.classList.remove('d-none');
+        secInfo.classList.remove('d-none');
+        fileContainer.classList.add('d-none');
+        uploadButton.innerHTML = '<i class="fas fa-search-dollar me-2"></i>Search SEC EDGAR';
     }
     
     // Check if elements exist before adding event listeners

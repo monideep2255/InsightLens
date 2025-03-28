@@ -24,16 +24,16 @@
                 <form id="upload-form" method="POST" action="{{ url_for('document_routes.upload_document') }}" enctype="multipart/form-data">
                     <div class="mb-4">
                         <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="upload_type" id="file-option" value="file" checked>
-                            <label class="form-check-label" for="file-option">Upload PDF</label>
+                            <input class="form-check-input" type="radio" name="upload_type" id="sec-option" value="sec" checked>
+                            <label class="form-check-label" for="sec-option" data-bs-toggle="tooltip" title="Search and analyze official financial reports from the SEC EDGAR database for any publicly-traded company">SEC EDGAR Search</label>
                         </div>
                         <div class="form-check form-check-inline">
                             <input class="form-check-input" type="radio" name="upload_type" id="url-option" value="url">
-                            <label class="form-check-label" for="url-option">Enter URL</label>
+                            <label class="form-check-label" for="url-option" data-bs-toggle="tooltip" title="Analyze content from a company website, investor relations page, or online financial report (most websites supported)">Enter URL</label>
                         </div>
                         <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="upload_type" id="sec-option" value="sec">
-                            <label class="form-check-label" for="sec-option">SEC EDGAR Search</label>
+                            <input class="form-check-input" type="radio" name="upload_type" id="file-option" value="file">
+                            <label class="form-check-label" for="file-option" data-bs-toggle="tooltip" title="Upload a PDF file containing company information, annual reports, or investor presentations">Upload PDF</label>
                         </div>
                     </div>
                     
@@ -66,17 +66,29 @@
                             <input type="url" class="form-control" id="url-input" name="url" 
                                    placeholder="https://example.com/company-info">
                         </div>
-                        <div class="form-text">Enter a URL to a company website, investor deck, or financial report</div>
+                        <div class="form-text">
+                            Enter a URL to any of these:
+                            <ul class="mt-1 mb-0">
+                                <li>Company website (investor relations section works best)</li>
+                                <li>Annual report/financial report online page (not PDF)</li>
+                                <li>Company blog or news release about financial performance</li>
+                            </ul>
+                        </div>
                     </div>
 
-                    <div id="sec-container" class="mb-3 d-none">
+                    <div id="sec-container" class="mb-3">
                         <label for="company-name" class="form-label">Company Name</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="fas fa-search-dollar"></i></span>
                             <input type="text" class="form-control" id="company-name" name="company_name" 
                                    placeholder="Enter company name (e.g., Apple, Microsoft, Tesla)">
                         </div>
-                        <div class="form-text">Search for company 10-K reports in the SEC EDGAR database</div>
+                        <div class="form-text">
+                            <p class="mb-1"><i class="fas fa-info-circle text-info me-1"></i> Type a company name to search the SEC EDGAR database for their latest 10-K report.</p>
+                            <div class="alert alert-light border mt-2 p-2 small">
+                                <strong>What is a 10-K?</strong> A 10-K is an annual financial report required by the SEC for all publicly-traded companies. It provides a comprehensive overview of the company's business, finances, risks, and management discussion.
+                            </div>
+                        </div>
                     </div>
 
                     <div class="alert alert-warning d-none" id="upload-status" role="alert"></div>
