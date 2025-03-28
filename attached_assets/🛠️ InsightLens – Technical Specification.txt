@@ -1,0 +1,124 @@
+﻿🛠️ InsightLens – Technical Specification
+Document Type: Developer-Facing Technical Spec
+Version: v1.0 (Initial Prototype for Replit Core / Bolt.new)
+________________
+
+
+📦 1. Application Overview
+InsightLens is a document analysis tool that leverages LLMs to extract structured insights for investors. Users upload PDFs or URLs, and the system generates value-investor-aligned insight cards using pre-defined GPT prompts. The tool is frontend-accessible and backend-driven with a modular AI pipeline.
+________________
+
+
+🧱 2. Architecture Overview
+Frontend (Replit / Bolt.new)
+* Framework: React (or Svelte) – SPA or tabbed layout
+* Components:
+   * Document upload module
+   * Insight card display (modular)
+   * Tagging & filters
+   * Phase toggles (Biotech Mode, Value Investor Lens)
+   * Scorecard sliders (Phase 3)
+   * Summary recommendation (Phase 5)
+Backend (Python)
+* Framework: FastAPI or Flask
+* Core logic:
+   * Document parsing (PDF, text, HTML)
+   * Insight card generation (GPT API requests)
+   * Caching layer for repeated requests
+* Integrations:
+   * OpenAI API (GPT-4)
+   * LangChain or LlamaIndex for PDF chunking & retrieval
+   * Optional: browser agent (playwright/scraper for later phases)
+Storage
+* Supabase (or Firebase) for:
+   * Uploaded documents metadata
+   * User evaluations & scoring (Phase 3+)
+   * Logs of insights generated (Phase 5 recommendations)
+________________
+
+
+🔁 3. AI Processing Flow
+1. Input Handling
+   * User uploads file or pastes URL
+   * Backend parses content into clean text using PDF parsers / web scrapers
+2. Card Generation (Per Section)
+   * Send cleaned content + prompt template to GPT
+   * Receive insight-specific output (e.g., Moat, Red Flags)
+   * Store and display outputs as individual cards
+3. Recommendation Engine (Phase 5)
+   * Combine all insight cards
+   * Generate weighted decision using GPT prompt
+   * Display: Recommendation + Explanation + Disclaimer
+________________
+
+
+🧠 4. AI Prompt Framework
+Insight cards will be driven by specific GPT prompts. Each prompt includes:
+* Role-based prompt engineering
+* Context: Insert parsed content
+* Structured output format
+[See PRD for full prompt library.]
+________________
+
+
+📄 5. Example Insight Flow
+User Uploads: Moderna 10-K PDF
+System Flow:
+* Parses PDF using LlamaIndex
+* Sends sections to:
+   * Business Summary Prompt
+   * Moat Detection Prompt
+   * Financial Health Prompt
+   * Red Flags Prompt
+   * Management Quality Prompt
+   * Scientific Rigor Prompt (Biotech Mode)
+* Aggregates outputs into display cards
+* Phase 5 generates overall Recommendation
+________________
+
+
+🧩 6. Suggested File Structure
+insightlens/
+├── frontend/
+│   ├── App.jsx
+│   ├── components/
+│   │   ├── UploadArea.jsx
+│   │   ├── InsightCard.jsx
+│   │   ├── Scorecard.jsx
+│   │   └── RecommendationBox.jsx
+├── backend/
+│   ├── main.py
+│   ├── pdf_parser.py
+│   ├── prompts.py
+│   └── routes/
+│       └── generate_insights.py
+├── assets/
+├── data/
+├── README.md
+└── requirements.txt
+________________
+
+
+✅ 7. MVP Milestones
+Phase
+	Milestone
+	1
+	Upload + display summary insight cards
+	2
+	Value Investing analysis cards (Moat, Margin, Red Flags)
+	3
+	Interactive scorecard system
+	4
+	AI-based company comparison + browser agent
+	5
+	Final Recommendation Generator with toggle + disclaimer
+	________________
+
+
+🛡️ 8. Legal & Disclaimer Module
+* All recommendation output must include:
+Disclaimer: This is an AI-generated opinion for research purposes only. It does not constitute investment advice.
+________________
+
+
+Ready to build 🚀

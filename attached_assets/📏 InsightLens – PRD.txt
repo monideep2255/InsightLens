@@ -1,0 +1,160 @@
+﻿📏 InsightLens – AI-Powered Company Research Assistant
+ChatPRD-Style Product Requirements Document (PRD)
+Version: Public Prototype – Portfolio Edition
+________________
+
+
+1. 🧬 Background / Context
+InsightLens is an AI research assistant that brings the discipline of value investing into the modern AI era. It helps users evaluate companies using uploaded documents (e.g., PDFs, investor decks, filings, websites) and generates AI-powered insight cards.
+The foundation of this tool draws from timeless principles established by Benjamin Graham and Warren Buffett. Value investing emphasizes assessing the intrinsic value of a business — understanding its fundamentals such as profitability, competitive edge, and management integrity — rather than being swayed by market speculation.
+A value investor looks for companies with:
+* Stable earnings
+* Low debt
+* Strong free cash flow
+* Competitive moats (e.g., brand, IP, network effects)
+* Management that thinks long-term
+* And a "margin of safety" — buying well below intrinsic value to reduce risk
+InsightLens combines these principles with modern AI tools to automate document intelligence and generate value-aligned insights.
+________________
+
+
+2. ❗ Problem Statement
+* Evaluating companies using documents (filings, pitch decks, scientific papers) is time-consuming and unstructured.
+* Most tools either offer generic summaries (ChatGPT) or raw data (Crunchbase) but lack insight.
+* There is no way for emerging investors or researchers to consistently evaluate businesses using Buffett/Graham thinking.
+________________
+
+
+3. ✅ Solution Overview
+InsightLens allows users to:
+* Upload any document or paste a URL
+* Automatically extract relevant financial, strategic, and scientific details
+* View structured insight cards (e.g., Business Summary, Moat, Red Flags)
+* Apply value investing judgment automatically via GPT-powered agents
+* Track, compare, and score companies over time
+The tool works equally well for biotech startups and public companies like Costco or United Airlines.
+________________
+
+
+4. 🔧 Feature Development Phases
+✨ Phase 1: Upload + Summarize (MVP Core)
+This phase builds the foundation of the tool. Users can upload documents (PDFs, URLs) and the AI will return plain-language summaries using structured insight cards. This allows anyone to understand what a company does without digging through long documents.
+* Upload PDFs or URLs
+* AI-powered plain-language company summary
+* Insight Cards:
+   * Business Summary
+   * Moat & Edge
+   * Basic Financial Health
+   * Management Snapshot
+⚖️ Phase 2: Value Investing Lens
+This phase layers in core principles from value investing. The AI will assess whether the company has a competitive advantage, red flags, or a margin of safety, and simulate how a value investor might think about the opportunity.
+* AI-detected Moat
+* Red Flag detection
+* Margin of Safety commentary
+* “Would Buffett invest?” AI judgment mode
+* Biotech Mode (scientific validity)
+📊 Phase 3: Scoring & Evaluation Framework
+This phase adds a scoring interface. Users can evaluate companies via sliders and checklists, save results, and export investment memos. This helps apply a consistent methodology across different companies.
+* Interactive scorecard (editable sliders/checklist)
+* Save & tag companies
+* Exportable insights/memos
+* Internal dashboard with history
+🧠 Phase 4: Augmented Research & Comparison
+This phase enhances the assistant with autonomous research capabilities. AI agents can fetch data from external sources, monitor changes, and generate comparisons between companies to support deeper strategic decisions.
+* Browser AI agents to fetch additional info
+* Public data sourcing (Crunchbase, PubMed, etc.)
+* Smart company comparison ("Compare A vs. B")
+* Alerts for changes/updates
+🧾 Phase 5: AI-Powered Recommendation Engine
+In this phase, the assistant synthesizes all previous analysis (financial, strategic, scientific, red flags, scoring) to produce an overall investment recommendation.
+* Generate AI-based summary recommendation: “Strong Consideration”, “Needs Further Review”, or “Pass”
+* Justification paragraph explaining the decision based on prior insight cards
+* Optional toggle: Value Investor Lens vs General Investor Lens
+* Include scoring thresholds that influence final output (e.g., red flag presence reduces score weight)
+* Allow user overrides with notes for manual adjustments
+Prompt Example:
+Based on the following insight cards (Business Summary, Moat, Financial Health, Red Flags, Management, Margin of Safety), provide a one-line recommendation from the perspective of a value investor. Choose: Strong Consideration, Needs Further Review, or Pass. Follow with a brief explanation. Do not make overly confident claims. This is a preliminary suggestion, not financial advice.
+Disclaimer:
+This recommendation is AI-generated and for exploratory purposes only. It does not constitute financial advice. Always perform your own due diligence before making any investment decisions.
+(financial, strategic, scientific, red flags, scoring) to produce an overall investment recommendation.
+* Generate AI-based summary recommendation: “Strong Consideration”, “Needs Further Review”, or “Pass”
+* Justification paragraph explaining the decision based on prior insight cards
+* Optional toggle: Value Investor Lens vs General Investor Lens. AI agents can fetch data from external sources, monitor changes, and generate comparisons between companies to support deeper strategic decisions.
+* Browser AI agents to fetch additional info
+* Public data sourcing (Crunchbase, PubMed, etc.)
+* Smart company comparison ("Compare A vs. B")
+* Alerts for changes/updates
+________________
+
+
+5. 👥 User Personas / Stories
+📅 "As an investor, I want to upload a startup deck and get a business breakdown so I can decide if it’s worth pursuing."
+🧐 "As a learner, I want to analyze Costco or United to see why they’re successful using investing principles."
+🧪 "As a researcher, I want to assess the commercial value of a biotech firm, not just its science."
+🧳 "As someone building a family office, I want to score and track companies over time consistently."
+🤖 "As a builder, I want to show how AI + investing principles can create real, usable tools."
+📃 "As a student, I want to read annual reports faster and pull out what matters."
+📊 "As an analyst, I want to flag red flags and compare companies side by side."
+________________
+
+
+6. 🧠 AI Strategy
+To generate useful and structured outputs, each insight card is powered by a custom prompt that helps the AI think like a value investor and respond in clear, investor-relevant formats. Below are the engineered prompts for each card:
+Prompt Templates for Insight Cards
+📌 Business Summary
+Explain this company’s business model in plain language. What do they sell or build? Who are their customers? What industry are they in?
+🛡️ Moat & Edge
+You are a value investor. Based on this document, does the company have a durable competitive advantage (moat)? Types: Brand, Network Effects, IP, Cost Advantage, Switching Costs.
+Return:
+1. Type of Moat (or None)
+2. Justification (1-2 sentences)
+3. Quote from doc, if available.
+📊 Financial Health
+Extract 3-5 financial signals or ratios from the document. Focus on:
+- Revenue trend
+- Debt levels
+- Profitability or free cash flow
+- Return on equity or assets (if mentioned)
+🧠 Management Quality
+Based on tone, quotes, and info in the document, what can you infer about the management team? Are they transparent? Are they aligned with shareholders?
+⚠️ Red Flags
+Scan for red flags in this document: aggressive accounting, inflated claims, missing financials, buzzword abuse, or high churn. Highlight 1-3 potential concerns with quotes.
+💰 Margin of Safety
+Would a value investor feel confident buying this company today? Is the price conservative compared to its intrinsic value? Mention what unknowns or risks exist.
+🔬 Scientific Rigor (Biotech Mode)
+If this is a biotech company, evaluate whether their claims are supported by trials, peer-reviewed research, or patents. Is the tech novel or derivative?
+* GPT-4 or Claude for reasoning
+* LangChain/LlamaIndex for PDF parsing
+* Prompt engineering aligned to each insight card:
+   * Business Summary
+   * Moat & Edge
+   * Financial Health
+   * Management Quality
+   * Red Flags
+   * Margin of Safety
+   * Scientific Rigor (Biotech Mode)
+________________
+
+
+7. 📈 Success Metrics
+* Time-to-insight: < 60 seconds from upload to full summary
+* Retention or repeated usage
+* AI accuracy compared to value investor judgment
+* Portfolio use: users apply it in real research
+________________
+
+
+8. 🔗 Dependencies / Stack
+* Frontend: Replit (React/Svelte) or Bolt.new
+* Backend: Python (Flask/FastAPI) + OpenAI API
+* AI Tooling: LangChain, LlamaIndex
+* Storage: Supabase or Firebase
+________________
+
+
+9. 🛣️ Next Steps / Roadmap
+* Build Phase 1 upload interface + card generator
+* Integrate GPT prompts
+* User test with documents from Costco, Moderna, etc.
+* Ship Phase 2 logic (moat detection, red flags)
+* Publish on GitHub + Replit as portfolio demo
