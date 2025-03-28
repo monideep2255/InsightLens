@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="text-center mb-5">
+            <h1 class="display-4 fw-bold">
+                <i class="fas fa-glasses text-info me-2"></i>InsightLens
+            </h1>
+            <p class="lead">AI-Powered Company Research Assistant</p>
+            <div class="d-flex justify-content-center">
+                <span class="badge bg-info text-dark me-2">Value Investing</span>
+                <span class="badge bg-info text-dark me-2">AI Analysis</span>
+                <span class="badge bg-info text-dark">Document Intelligence</span>
+            </div>
+        </div>
+
+        <!-- Upload Form -->
+        <div class="card mb-5">
+            <div class="card-header">
+                <h5 class="mb-0">Analyze a Company</h5>
+            </div>
+            <div class="card-body">
+                <form id="upload-form" method="POST" action="{{ url_for('document_routes.upload_document') }}" enctype="multipart/form-data">
+                    <div class="mb-4">
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="upload_type" id="file-option" value="file" checked>
+                            <label class="form-check-label" for="file-option">Upload PDF</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="upload_type" id="url-option" value="url">
+                            <label class="form-check-label" for="url-option">Enter URL</label>
+                        </div>
+                    </div>
+
+                    <div id="file-container" class="mb-3">
+                        <div id="upload-area" class="upload-area text-center">
+                            <i class="fas fa-file-pdf fa-3x text-info mb-3"></i>
+                            <h5>Drag & Drop your PDF file here</h5>
+                            <p class="text-muted small">or click to browse your files</p>
+                            <input type="file" id="file-input" name="file" class="d-none" accept=".pdf">
+                        </div>
+                        <div id="file-display" class="d-none alert alert-info">
+                            <i class="fas fa-file-pdf me-2"></i>
+                            <span id="file-name"></span>
+                        </div>
+                    </div>
+
+                    <div id="url-container" class="mb-3 d-none">
+                        <label for="url-input" class="form-label">Website URL</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-link"></i></span>
+                            <input type="url" class="form-control" id="url-input" name="url" 
+                                   placeholder="https://example.com/company-info">
+                        </div>
+                        <div class="form-text">Enter a URL to a company website, investor deck, or financial report</div>
+                    </div>
+
+                    <div class="alert alert-warning d-none" id="upload-status" role="alert"></div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" id="upload-button" class="btn btn-primary">
+                            <i class="fas fa-search me-2"></i>Analyze with AI
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- About Section -->
+        <section id="about" class="card">
+            <div class="card-header">
+                <h5 class="mb-0">About InsightLens</h5>
+            </div>
+            <div class="card-body">
+                <h4>AI-Powered Value Investing Research</h4>
+                <p>InsightLens brings the discipline of value investing into the modern AI era. Upload company documents and get instant insights based on principles established by Benjamin Graham and Warren Buffett.</p>
+                
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <div class="card h-100 bg-dark">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="fas fa-chart-line text-info me-2"></i>
+                                    Value Investing Analysis
+                                </h5>
+                                <p class="card-text">Analyze companies based on fundamentals like profitability, competitive edge, and management integrity.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card h-100 bg-dark">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="fas fa-shield-alt text-info me-2"></i>
+                                    Moat Detection
+                                </h5>
+                                <p class="card-text">Identify competitive advantages like brand value, network effects, IP, cost advantages, and switching costs.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <div class="card h-100 bg-dark">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="fas fa-exclamation-triangle text-info me-2"></i>
+                                    Red Flag Detection
+                                </h5>
+                                <p class="card-text">Spot warning signs like aggressive accounting, inflated claims, or missing financial details.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card h-100 bg-dark">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="fas fa-brain text-info me-2"></i>
+                                    AI-Powered Insights
+                                </h5>
+                                <p class="card-text">Let advanced AI analyze documents and extract relevant financial, strategic, and scientific details.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <h5>How it works</h5>
+                    <ol>
+                        <li>Upload a PDF document or provide a URL to company information</li>
+                        <li>Our AI analyzes the content using value investing principles</li>
+                        <li>View structured insight cards highlighting key aspects of the business</li>
+                        <li>Make more informed decisions about companies</li>
+                    </ol>
+                </div>
+                
+                <div class="alert alert-secondary mt-3">
+                    <p class="mb-0"><strong>Note:</strong> InsightLens is designed as a research assistant, not a financial advisor. Always perform your own due diligence.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

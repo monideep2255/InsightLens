@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="fas fa-glasses text-info me-2"></i>
+                {% if document.title %}
+                    {{ document.title }}
+                {% elif document.filename %}
+                    {{ document.filename }}
+                {% else %}
+                    {{ document.url }}
+                {% endif %}
+            </h2>
+            <a href="{{ url_for('document_routes.index') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>New Analysis
+            </a>
+        </div>
+
+        <div id="insight-container" data-document-id="{{ document.id }}">
+            {% if insights %}
+                <!-- Business Summary -->
+                {% set business_summary = insights|selectattr('category', 'equalto', 'business_summary')|first %}
+                {% if business_summary %}
+                    <div class="card insight-card mb-4">
+                        <div class="card-header bg-dark">
+                            <div class="card-title-wrapper">
+                                <div class="card-icon bg-info text-dark">
+                                    <i class="fas fa-building"></i>
+                                </div>
+                                <h5 class="card-title mb-0">Business Summary</h5>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            {{ business_summary.content|safe }}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Moat & Edge -->
+                {% set moat = insights|selectattr('category', 'equalto', 'moat')|first %}
+                {% if moat %}
+                    <div class="card insight-card mb-4">
+                        <div class="card-header bg-dark">
+                            <div class="card-title-wrapper">
+                                <div class="card-icon bg-success text-dark">
+                                    <i class="fas fa-shield-alt"></i>
+                                </div>
+                                <h5 class="card-title mb-0">Moat & Competitive Edge</h5>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            {{ moat.content|safe }}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Financial Health -->
+                {% set financial = insights|selectattr('category', 'equalto', 'financial')|first %}
+                {% if financial %}
+                    <div class="card insight-card mb-4">
+                        <div class="card-header bg-dark">
+                            <div class="card-title-wrapper">
+                                <div class="card-icon bg-primary text-dark">
+                                    <i class="fas fa-chart-line"></i>
+                                </div>
+                                <h5 class="card-title mb-0">Financial Health</h5>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            {{ financial.content|safe }}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Management Snapshot -->
+                {% set management = insights|selectattr('category', 'equalto', 'management')|first %}
+                {% if management %}
+                    <div class="card insight-card mb-4">
+                        <div class="card-header bg-dark">
+                            <div class="card-title-wrapper">
+                                <div class="card-icon bg-warning text-dark">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <h5 class="card-title mb-0">Management Snapshot</h5>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            {{ management.content|safe }}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Disclaimer -->
+                <div class="disclaimer">
+                    <p><strong>Disclaimer:</strong> This is an AI-generated analysis for research purposes only. 
+                    It does not constitute investment advice. The information presented may not be accurate or complete. 
+                    Always perform your own due diligence before making investment decisions.</p>
+                </div>
+            {% else %}
+                <div class="spinner-container">
+                    <div class="spinner-border text-info" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="ms-3">
+                        <h5>Analyzing document...</h5>
+                        <p class="text-muted">This may take a minute to process</p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
