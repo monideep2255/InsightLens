@@ -93,7 +93,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const fileContainer = document.getElementById('file-container');
     const secContainer = document.getElementById('sec-container');
     const secInfo = document.getElementById('sec-info');
-    const uploadButton = document.getElementById('upload-button');
     
     // Show SEC EDGAR option by default
     if (secOption && secOption.checked) {
