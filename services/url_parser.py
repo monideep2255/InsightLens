@@ -50,14 +50,16 @@ def extract_url_content(url):
         validate_url(url)
         
         # Set up headers for SEC website
-        headers = None
-        if 'sec.gov' in url:
-            headers = {
-                'User-Agent': 'InsightLens Research Tool (contactus@example.com)'
-            }
+        user_agent = 'InsightLens Research Tool (contactus@example.com)'
         
         # Fetch content from URL with appropriate headers
-        downloaded = trafilatura.fetch_url(url, headers=headers)
+        # Note: trafilatura.fetch_url doesn't accept headers directly, need to use requests
+        if 'sec.gov' in url:
+            response = requests.get(url, headers={'User-Agent': user_agent})
+            response.raise_for_status()
+            downloaded = response.text
+        else:
+            downloaded = trafilatura.fetch_url(url)
         if not downloaded:
             # Attempt to find PDF links if it's a company website
             if not 'sec.gov' in url:
