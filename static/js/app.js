@@ -1,4 +1,71 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // Theme toggling functionality
+    const themeToggleBtn = document.getElementById('theme-toggle');
+    const darkIcon = document.getElementById('dark-icon');
+    const lightIcon = document.getElementById('light-icon');
+    const htmlElement = document.documentElement;
+    const darkThemeStylesheet = document.getElementById('dark-theme-stylesheet');
+    const lightThemeStylesheet = document.getElementById('light-theme-stylesheet');
+    
+    // Check if user has a saved preference
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+        setTheme(savedTheme);
+    }
+    
+    // Add event listener for theme toggle button
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', function() {
+            const currentTheme = htmlElement.getAttribute('data-bs-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            // Switch theme
+            setTheme(newTheme);
+            
+            // Save preference
+            localStorage.setItem('theme', newTheme);
+        });
+    }
+    
+    function setTheme(theme) {
+        // Set data attribute
+        htmlElement.setAttribute('data-bs-theme', theme);
+        
+        // Toggle stylesheets
+        if (theme === 'dark') {
+            darkThemeStylesheet.removeAttribute('disabled');
+            lightThemeStylesheet.setAttribute('disabled', '');
+            
+            // Update navbar and footer for dark mode
+            document.querySelector('nav').classList.add('navbar-dark', 'bg-dark');
+            document.querySelector('nav').classList.remove('navbar-light', 'bg-light');
+            document.querySelector('footer').classList.add('bg-dark');
+            document.querySelector('footer').classList.remove('bg-light');
+        } else {
+            darkThemeStylesheet.setAttribute('disabled', '');
+            lightThemeStylesheet.removeAttribute('disabled');
+            
+            // Update navbar and footer for light mode
+            document.querySelector('nav').classList.remove('navbar-dark', 'bg-dark');
+            document.querySelector('nav').classList.add('navbar-light', 'bg-light');
+            document.querySelector('footer').classList.remove('bg-dark');
+            document.querySelector('footer').classList.add('bg-light');
+        }
+        
+        // Update icons
+        updateThemeIcons(theme);
+    }
+    
+    function updateThemeIcons(theme) {
+        if (theme === 'dark') {
+            darkIcon.classList.remove('d-none');
+            lightIcon.classList.add('d-none');
+        } else {
+            darkIcon.classList.add('d-none');
+            lightIcon.classList.remove('d-none');
+        }
+    }
+    
     // File upload handling
     const uploadArea = document.getElementById('upload-area');
     const fileInput = document.getElementById('file-input');
