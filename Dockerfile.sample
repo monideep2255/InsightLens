@@ -1,0 +1,21 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install dependencies
+COPY sample_requirements.txt .
+RUN pip install --no-cache-dir -r sample_requirements.txt
+
+# Copy application code
+COPY . .
+
+# Create uploads directory if it doesn't exist
+RUN mkdir -p uploads
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV FLASK_APP=main.py
+ENV FLASK_DEBUG=0
+
+# Run gunicorn
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "main:app"]

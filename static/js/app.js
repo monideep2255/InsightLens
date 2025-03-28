@@ -263,37 +263,115 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check processing status if on insights page
     const insightContainer = document.getElementById('insight-container');
     const documentId = insightContainer?.dataset.documentId;
+    const cancelProcessingBtn = document.getElementById('cancel-processing');
+    const processingStatus = document.getElementById('processing-status');
+    
+    // Add event listener for cancel button
+    if (cancelProcessingBtn && documentId) {
+        cancelProcessingBtn.addEventListener('click', function() {
+            if (confirm('Are you sure you want to cancel this analysis? This cannot be undone.')) {
+                // Display cancellation in progress message
+                cancelProcessingBtn.disabled = true;
+                cancelProcessingBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Cancelling...';
+                
+                // Call the cancel API endpoint
+                fetch(`/api/processing/${documentId}/cancel`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Redirect to home page
+                        window.location.href = '/';
+                    } else {
+                        alert('Error: ' + (data.message || 'Could not cancel processing'));
+                        cancelProcessingBtn.disabled = false;
+                        cancelProcessingBtn.innerHTML = '<i class="fas fa-stop-circle me-2"></i>Cancel Processing';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error cancelling processing:', error);
+                    alert('An error occurred while trying to cancel. Please try again.');
+                    cancelProcessingBtn.disabled = false;
+                    cancelProcessingBtn.innerHTML = '<i class="fas fa-stop-circle me-2"></i>Cancel Processing';
+                });
+            }
+        });
+    }
     
     if (documentId && insightContainer) {
+        // Keep track of elapsed processing time
+        let processingStartTime = new Date();
+        let processingTimer;
+        
+        function updateProcessingTime() {
+            if (processingStatus) {
+                const elapsedSeconds = Math.floor((new Date() - processingStartTime) / 1000);
+                const minutes = Math.floor(elapsedSeconds / 60);
+                const seconds = elapsedSeconds % 60;
+                processingStatus.textContent = `Analyzing document... (${minutes}m ${seconds}s)`;
+            }
+            processingTimer = setTimeout(updateProcessingTime, 1000);
+        }
+        
+        // Start the timer if we're on the processing page
+        if (processingStatus) {
+            updateProcessingTime();
+        }
+        
         // Function to check processing status
         function checkProcessingStatus() {
             fetch(`/api/processing/${documentId}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'completed') {
+                        // Clear the timer if it exists
+                        if (processingTimer) {
+                            clearTimeout(processingTimer);
+                        }
+                        
                         // Refresh the page to show insights
                         window.location.reload();
-                    } else if (data.status === 'failed') {
+                    } else if (data.status === 'failed' || data.status === 'cancelled') {
+                        // Clear the timer if it exists
+                        if (processingTimer) {
+                            clearTimeout(processingTimer);
+                        }
+                        
+                        // Show appropriate message based on status
+                        const statusText = data.status === 'cancelled' ? 'Analysis Cancelled' : 'Processing Failed';
+                        const iconClass = data.status === 'cancelled' ? 'fa-ban text-warning' : 'fa-exclamation-triangle text-danger';
+                        
                         // Show error message
                         insightContainer.innerHTML = `
-                            <div class="alert alert-danger" role="alert">
-                                <h4 class="alert-heading">Processing Failed!</h4>
-                                <p>${data.error || 'An error occurred while processing your document.'}</p>
-                                <hr>
-                                <p class="mb-0">Please try uploading a different document or check the URL.</p>
+                            <div class="card mb-4">
+                                <div class="card-body text-center">
+                                    <i class="fas ${iconClass} fa-3x mb-3"></i>
+                                    <h4 class="mb-3">${statusText}</h4>
+                                    <p>${data.error || 'The document processing was stopped.'}</p>
+                                    <div class="mt-4">
+                                        <a href="/" class="btn btn-primary">
+                                            <i class="fas fa-home me-2"></i>Return to Home
+                                        </a>
+                                    </div>
+                                </div>
                             </div>`;
+                            
                         if (loadingBackdrop) {
                             loadingBackdrop.classList.add('d-none');
                         }
                     } else if (data.status === 'processing' || data.status === 'pending') {
-                        // Keep checking status every 3 seconds
-                        setTimeout(checkProcessingStatus, 3000);
+                        // Keep checking status every 5 seconds
+                        setTimeout(checkProcessingStatus, 5000);
                     }
                 })
                 .catch(error => {
                     console.error('Error checking processing status:', error);
                     // Try again after a delay
-                    setTimeout(checkProcessingStatus, 5000);
+                    setTimeout(checkProcessingStatus, 8000);
                 });
         }
         

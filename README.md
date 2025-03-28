@@ -165,6 +165,70 @@ InsightLens is an AI-powered tool that analyzes company documents through the le
   - Retry logic for transient failures
   - Proper error messages for failed analysis
 
+## Local Development Setup
+
+### Prerequisites
+
+- Python 3.11 or higher
+- PostgreSQL (local installation or Docker)
+- OpenAI API key (for AI-powered analysis)
+
+### Installation Steps
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/insightlens.git
+   cd insightlens
+   ```
+
+2. **Create a virtual environment**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Set up environment variables**
+   Create a `.env` file in the project root with the following content:
+   ```
+   FLASK_SECRET_KEY=your_random_secret_key
+   DATABASE_URL=postgresql://username:password@localhost:5432/insightlens
+   OPENAI_API_KEY=your_openai_api_key
+   ```
+
+5. **Set up the database**
+   ```bash
+   # Create PostgreSQL database
+   createdb insightlens
+
+   # Initialize the database (tables will be created on first run)
+   python main.py
+   ```
+
+6. **Run the application**
+   ```bash
+   python main.py
+   ```
+   The application will be available at http://localhost:5000
+
+### Docker Setup (Alternative)
+
+If you prefer using Docker:
+
+1. **Build the Docker image**
+   ```bash
+   docker build -t insightlens .
+   ```
+
+2. **Run with Docker Compose**
+   ```bash
+   docker-compose up
+   ```
+
 ## Future Enhancements (Planned for Phase 2)
 
 - **User Accounts & History**
