@@ -205,6 +205,24 @@ body {
   margin-bottom: 1rem;
 }
 
+/* Feature cards for theme support */
+.feature-card {
+  transition: all 0.3s ease;
+}
+
+/* Dark mode styles */
+[data-bs-theme="dark"] .feature-card {
+  background-color: var(--bs-dark);
+  color: var(--bs-light);
+}
+
+/* Light mode styles */
+[data-bs-theme="light"] .feature-card {
+  background-color: var(--bs-light);
+  color: var(--bs-dark);
+  border: 1px solid var(--bs-border-color);
+}
+
 @media (max-width: 575.98px) {
   .upload-area {
     padding: 1rem;
