@@ -69,6 +69,31 @@ InsightLens is an AI-powered tool that analyzes company documents through the le
    - Organized insight cards for easy review
    - Comprehensive error handling and user feedback
 
+### Future Enhancements (Planned for Phase 2)
+
+- **User Accounts & History**
+  - User registration and authentication
+  - Personal document library
+  - Saved insights history
+
+- **Enhanced Analysis Features**
+  - Additional insight categories (e.g., Industry Analysis, Risk Assessment)
+  - Competitor comparison
+  - Trend analysis over time (multiple reports)
+  - Financial ratio calculations
+
+- **Productivity Features**
+  - Export to PDF/CSV for offline reference
+  - Email notifications when processing completes
+  - Customizable analysis parameters
+  - Batch processing for multiple documents
+
+- **Advanced Research Tools**
+  - Integration with additional financial data sources
+  - Custom questions and answers about the document
+  - Highlight important sections of original document
+  - Automatic footnote analysis
+
 ## Technical Implementation
 
 ### Backend
@@ -228,28 +253,3 @@ If you prefer using Docker:
    ```bash
    docker-compose up
    ```
-
-## Future Enhancements (Planned for Phase 2)
-
-- **User Accounts & History**
-  - User registration and authentication
-  - Personal document library
-  - Saved insights history
-  
-- **Enhanced Analysis Features**
-  - Additional insight categories (e.g., Industry Analysis, Risk Assessment)
-  - Competitor comparison
-  - Trend analysis over time (multiple reports)
-  - Financial ratio calculations
-  
-- **Productivity Features**
-  - Export to PDF/CSV for offline reference
-  - Email notifications when processing completes
-  - Customizable analysis parameters
-  - Batch processing for multiple documents
-  
-- **Advanced Research Tools**
-  - Integration with additional financial data sources
-  - Custom questions and answers about the document
-  - Highlight important sections of original document
-  - Automatic footnote analysis
