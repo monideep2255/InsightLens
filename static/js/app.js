@@ -123,13 +123,39 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (uploadForm) {
         uploadForm.addEventListener('submit', function(e) {
-            // Validate either file or URL is provided
-            if ((!fileInput.files.length || fileInput.files.length === 0) && 
-                (!urlInput.value || urlInput.value.trim() === '')) {
+            const selectedOption = document.querySelector('input[name="upload_type"]:checked').value;
+            const companyName = document.getElementById('company-name');
+            let isValid = true;
+            let errorMessage = '';
+            
+            // Validate based on selected option
+            if (selectedOption === 'file') {
+                if (!fileInput.files.length || fileInput.files.length === 0) {
+                    isValid = false;
+                    errorMessage = 'Please select a PDF file to upload';
+                }
+            } else if (selectedOption === 'url') {
+                if (!urlInput.value || urlInput.value.trim() === '') {
+                    isValid = false;
+                    errorMessage = 'Please enter a valid URL';
+                }
+            } else if (selectedOption === 'sec') {
+                if (!companyName.value || companyName.value.trim() === '') {
+                    isValid = false;
+                    errorMessage = 'Please enter a company name to search';
+                }
+                
+                // Change form action for SEC EDGAR search
+                if (isValid) {
+                    uploadForm.action = `/edgar/search?query=${encodeURIComponent(companyName.value)}`;
+                }
+            }
+            
+            if (!isValid) {
                 e.preventDefault();
-                uploadStatus.textContent = 'Please provide either a PDF file or URL';
+                uploadStatus.textContent = errorMessage;
                 uploadStatus.classList.remove('d-none');
-                uploadStatus.classList.add('text-danger');
+                uploadStatus.classList.add('alert-warning');
                 return false;
             }
             
@@ -140,26 +166,44 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Disable upload button to prevent multiple submissions
             uploadButton.disabled = true;
-            uploadButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+            
+            // Set different loading text based on the selected option
+            if (selectedOption === 'sec') {
+                uploadButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Searching...';
+            } else {
+                uploadButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+            }
         });
     }
     
-    // Toggle between URL and File inputs
+    // Toggle between URL, File, and SEC EDGAR options
     const urlOption = document.getElementById('url-option');
     const fileOption = document.getElementById('file-option');
+    const secOption = document.getElementById('sec-option');
     const urlContainer = document.getElementById('url-container');
     const fileContainer = document.getElementById('file-container');
+    const secContainer = document.getElementById('sec-container');
+    const secInfo = document.getElementById('sec-info');
     
-    if (urlOption && fileOption) {
+    if (urlOption && fileOption && secOption) {
         urlOption.addEventListener('change', function() {
             if (this.checked) {
                 urlContainer.classList.remove('d-none');
                 fileContainer.classList.add('d-none');
-                // Clear file input
+                secContainer.classList.add('d-none');
+                secInfo.classList.add('d-none');
+                
+                // Clear other inputs
                 if (fileInput) fileInput.value = '';
                 if (document.getElementById('file-display')) {
                     document.getElementById('file-display').classList.add('d-none');
                 }
+                if (document.getElementById('company-name')) {
+                    document.getElementById('company-name').value = '';
+                }
+                
+                // Update button text
+                uploadButton.innerHTML = '<i class="fas fa-search me-2"></i>Analyze with AI';
             }
         });
         
@@ -167,8 +211,36 @@ document.addEventListener('DOMContentLoaded', function() {
             if (this.checked) {
                 fileContainer.classList.remove('d-none');
                 urlContainer.classList.add('d-none');
-                // Clear URL input
+                secContainer.classList.add('d-none');
+                secInfo.classList.add('d-none');
+                
+                // Clear other inputs
                 if (urlInput) urlInput.value = '';
+                if (document.getElementById('company-name')) {
+                    document.getElementById('company-name').value = '';
+                }
+                
+                // Update button text
+                uploadButton.innerHTML = '<i class="fas fa-search me-2"></i>Analyze with AI';
+            }
+        });
+        
+        secOption.addEventListener('change', function() {
+            if (this.checked) {
+                secContainer.classList.remove('d-none');
+                secInfo.classList.remove('d-none');
+                fileContainer.classList.add('d-none');
+                urlContainer.classList.add('d-none');
+                
+                // Clear other inputs
+                if (fileInput) fileInput.value = '';
+                if (urlInput) urlInput.value = '';
+                if (document.getElementById('file-display')) {
+                    document.getElementById('file-display').classList.add('d-none');
+                }
+                
+                // Update button text
+                uploadButton.innerHTML = '<i class="fas fa-search-dollar me-2"></i>Search SEC EDGAR';
             }
         });
     }

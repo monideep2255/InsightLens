@@ -31,14 +31,17 @@
                             <input class="form-check-input" type="radio" name="upload_type" id="url-option" value="url">
                             <label class="form-check-label" for="url-option">Enter URL</label>
                         </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="upload_type" id="sec-option" value="sec">
+                            <label class="form-check-label" for="sec-option">SEC EDGAR Search</label>
+                        </div>
                     </div>
                     
-                    <div class="alert alert-info mb-4">
+                    <div id="sec-info" class="alert alert-info mb-4 d-none">
                         <div class="d-flex align-items-center">
-                            <i class="fas fa-search-dollar fa-2x me-3"></i>
+                            <i class="fas fa-info-circle fa-2x me-3"></i>
                             <div>
-                                <strong>SEC EDGAR Search:</strong> 
-                                <p class="mb-0">Looking for 10-K reports? Try our <a href="{{ url_for('edgar.search') }}" class="alert-link">SEC EDGAR Search</a> to directly search and analyze company filings.</p>
+                                <p class="mb-0">The SEC EDGAR database provides free access to financial reports, including 10-K filings, for all publicly traded companies.</p>
                             </div>
                         </div>
                     </div>
@@ -64,6 +67,16 @@
                                    placeholder="https://example.com/company-info">
                         </div>
                         <div class="form-text">Enter a URL to a company website, investor deck, or financial report</div>
+                    </div>
+
+                    <div id="sec-container" class="mb-3 d-none">
+                        <label for="company-name" class="form-label">Company Name</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-search-dollar"></i></span>
+                            <input type="text" class="form-control" id="company-name" name="company_name" 
+                                   placeholder="Enter company name (e.g., Apple, Microsoft, Tesla)">
+                        </div>
+                        <div class="form-text">Search for company 10-K reports in the SEC EDGAR database</div>
                     </div>
 
                     <div class="alert alert-warning d-none" id="upload-status" role="alert"></div>

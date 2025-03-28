@@ -14,7 +14,16 @@ def search():
     """
     Search for companies in SEC EDGAR database
     """
-    if request.method == 'POST':
+    # Handle the query parameter for GET requests from the main page
+    if request.method == 'GET' and request.args.get('query'):
+        company_name = request.args.get('query', '')
+        if not company_name:
+            return render_template('edgar_search.html', error='Please enter a company name')
+        
+        companies = search_company(company_name)
+        return render_template('edgar_search.html', companies=companies, query=company_name)
+    # Handle POST requests from the edgar_search page form
+    elif request.method == 'POST':
         company_name = request.form.get('company_name', '')
         if not company_name:
             return render_template('edgar_search.html', error='Please enter a company name')
