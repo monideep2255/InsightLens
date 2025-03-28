@@ -64,7 +64,7 @@ def process_10k(cik):
         # but for simplicity, we'll process it here (may cause timeout issues for large documents)
         process_document(document.id)
         
-        return redirect(url_for('insights.show_insights', document_id=document.id))
+        return redirect(url_for('insight_routes.show_insights', document_id=document.id))
         
     except Exception as e:
         logger.error(f"Error processing 10-K for CIK {cik}: {str(e)}")
