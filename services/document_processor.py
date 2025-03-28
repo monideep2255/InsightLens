@@ -4,7 +4,7 @@ from datetime import datetime
 from werkzeug.utils import secure_filename
 from flask import current_app
 
-from app import db
+from app import db, app
 from models import Document, Insight, Processing
 from services.pdf_parser import extract_pdf_content
 from services.url_parser import extract_url_content

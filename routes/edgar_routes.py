@@ -1,5 +1,6 @@
-from flask import Blueprint, render_template, request, redirect, url_for, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, jsonify, current_app
 import logging
+import threading
 from models import Document, Processing
 from app import db
 from services.edgar_service import search_company, get_latest_10k, extract_10k_content
@@ -59,10 +60,14 @@ def process_10k(cik):
         db.session.add(processing)
         db.session.commit()
         
-        # Start processing in background
-        # In a production environment, this would be done with a task queue
-        # but for simplicity, we'll process it here (may cause timeout issues for large documents)
-        process_document(document.id)
+        # Start processing in a background thread with app context
+        def process_with_app_context(doc_id):
+            with current_app.app_context():
+                process_document(doc_id)
+                
+        thread = threading.Thread(target=process_with_app_context, args=(document.id,))
+        thread.daemon = True
+        thread.start()
         
         return redirect(url_for('insight_routes.show_insights', document_id=document.id))
         

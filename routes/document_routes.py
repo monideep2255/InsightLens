@@ -70,8 +70,12 @@ def upload_document():
         db.session.add(processing)
         db.session.commit()
         
-        # Start processing in a background thread
-        thread = threading.Thread(target=process_document, args=(document.id,))
+        # Start processing in a background thread with app context
+        def process_with_app_context(doc_id):
+            with current_app.app_context():
+                process_document(doc_id)
+                
+        thread = threading.Thread(target=process_with_app_context, args=(document.id,))
         thread.daemon = True
         thread.start()
         
