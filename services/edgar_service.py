@@ -117,6 +117,18 @@ def get_latest_10k(cik):
                                 document_url = f"https://www.sec.gov/Archives/edgar/data/{cik}/{accession_number}/{document_url}"
                             
                             return document_url
+                            
+                # Try to find any HTM file that might be the 10-K
+                for link in filing_links:
+                    document_url = link.get('href')
+                    if document_url and document_url.lower().endswith('.htm') and not 'index' in document_url.lower():
+                        # Convert relative URL to absolute URL
+                        if document_url.startswith('/'):
+                            document_url = f"https://www.sec.gov{document_url}"
+                        elif not document_url.startswith('http'):
+                            document_url = f"https://www.sec.gov/Archives/edgar/data/{cik}/{accession_number}/{document_url}"
+                        
+                        return document_url
                 
                 # If we can't find a specific 10-K link, return the index page
                 return html_url
