@@ -143,35 +143,118 @@ def generate_insights_with_openai(content):
     
     insights = {}
     
-    # Process each insight category with its own prompt
-    for category, prompt_template in PROMPT_TEMPLATES.items():
-        try:
-            # Fill the prompt template with document content
-            prompt = prompt_template.format(content=content[:15000])  # Limit content length
+    # Create a more optimized summarized version of the content
+    try:
+        # First, get a condensed version of the content for better efficiency
+        MAX_ORIGINAL_CONTENT = 8000  # Limit initial content size
+        truncated_content = content[:MAX_ORIGINAL_CONTENT]
+        
+        # If content is very large, get a summarized version first
+        if len(content) > MAX_ORIGINAL_CONTENT:
+            logger.info(f"Content is large ({len(content)} chars), creating summary first")
+            # Create a brief summary for the main points of the document
+            summary_prompt = f"""
+            Summarize the key business points in this document in 1000 words or less.
+            Focus on extracting facts about:
+            1. The company's business model and products/services
+            2. Market position and competitive advantages
+            3. Financial metrics mentioned
+            4. Management statements and strategy
             
-            # Make OpenAI API call
+            DOCUMENT CONTENT:
+            {truncated_content}
+            """
+            
+            # Generate a summary first
             # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
             # do not change this unless explicitly requested by the user
-            response = openai.chat.completions.create(
+            summary_response = openai.chat.completions.create(
                 model="gpt-4o",
                 messages=[
-                    {"role": "system", "content": "You are an AI assistant that helps analyze company documents using value investing principles."},
-                    {"role": "user", "content": prompt}
+                    {"role": "system", "content": "You are a business analyst who extracts key facts from documents."},
+                    {"role": "user", "content": summary_prompt}
                 ],
-                temperature=0.5,
+                temperature=0.3,
                 max_tokens=1000
             )
             
-            # Extract the insight content from response
-            insight_content = response.choices[0].message.content
-            insights[category] = insight_content
+            # Extract summary
+            summary = summary_response.choices[0].message.content
             
-            logger.info(f"Successfully generated {category} insight with OpenAI")
+            # Create a combined document with both summary and samples from the original
+            # This gives the AI both a high-level view and specific details
+            content_to_analyze = f"""
+            DOCUMENT SUMMARY:
+            {summary}
             
-        except Exception as e:
-            logger.error(f"Error generating {category} insight with OpenAI: {str(e)}")
-            # Provide a fallback message for failed insights
-            insights[category] = f"<p>Unable to generate {category} insight. Error: {str(e)}</p>"
+            BEGINNING OF DOCUMENT:
+            {content[:2500]}
+            
+            MIDDLE OF DOCUMENT:
+            {content[len(content)//2-1000:len(content)//2+1000] if len(content) > 5000 else ""}
+            
+            END OF DOCUMENT:
+            {content[-2500:] if len(content) > 5000 else ""}
+            """
+        else:
+            content_to_analyze = truncated_content
+    
+        # Process each insight category with its own prompt
+        for category, prompt_template in PROMPT_TEMPLATES.items():
+            try:
+                # Fill the prompt template with optimized content
+                prompt = prompt_template.format(content=content_to_analyze)
+                
+                # Make OpenAI API call
+                # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
+                # do not change this unless explicitly requested by the user
+                response = openai.chat.completions.create(
+                    model="gpt-4o",
+                    messages=[
+                        {"role": "system", "content": "You are an AI assistant that helps analyze company documents using value investing principles. Your answers should be concise and factual."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.3,  # Lower temperature for more focused responses
+                    max_tokens=800    # Shorter responses
+                )
+                
+                # Extract the insight content from response
+                insight_content = response.choices[0].message.content
+                insights[category] = insight_content
+                
+                logger.info(f"Successfully generated {category} insight with OpenAI")
+                
+            except Exception as e:
+                logger.error(f"Error generating {category} insight with OpenAI: {str(e)}")
+                # Provide a fallback message for failed insights
+                insights[category] = f"<p>Unable to generate {category} insight. Error: {str(e)}</p>"
+    
+    except Exception as e:
+        logger.error(f"Error in content preprocessing: {str(e)}")
+        # Fallback to a simpler approach if summarization fails
+        for category, prompt_template in PROMPT_TEMPLATES.items():
+            try:
+                # Use a much smaller content sample for fallback
+                prompt = prompt_template.format(content=content[:5000])
+                
+                # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
+                # do not change this unless explicitly requested by the user
+                response = openai.chat.completions.create(
+                    model="gpt-4o",
+                    messages=[
+                        {"role": "system", "content": "You are an AI assistant that helps analyze company documents using value investing principles."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.3,
+                    max_tokens=800
+                )
+                
+                insights[category] = response.choices[0].message.content
+                logger.info(f"Generated {category} insight with fallback method")
+                
+            except Exception as e2:
+                logger.error(f"Error in fallback generation for {category}: {str(e2)}")
+                insights[category] = f"<p>Unable to generate {category} insight. Error: {str(e2)}</p>"
     
     return insights
 
@@ -182,24 +265,44 @@ def generate_insights_with_huggingface(content):
     if not os.environ.get("HUGGINGFACE_API_KEY"):
         return {category: "<p>Hugging Face API key not configured.</p>" for category in PROMPT_TEMPLATES.keys()}
     
+    # Create a more optimized process for Hugging Face
+    
+    # First, prepare optimized content
+    MAX_CONTENT_LENGTH = 8000
+    if len(content) > MAX_CONTENT_LENGTH:
+        logger.info(f"Content is large ({len(content)} chars), creating optimized version for Hugging Face")
+        # Extract the beginning content
+        beginning = content[:int(MAX_CONTENT_LENGTH * 0.4)]
+        # Extract the middle section
+        middle_start = int(len(content) * 0.4)
+        middle = content[middle_start:middle_start + int(MAX_CONTENT_LENGTH * 0.3)]
+        # Extract the end content
+        end = content[-int(MAX_CONTENT_LENGTH * 0.3):]
+        # Combine the parts with a note about truncation
+        optimized_content = beginning + "\n\n[...CONTENT TRUNCATED...]\n\n" + middle + "\n\n[...CONTENT TRUNCATED...]\n\n" + end
+    else:
+        optimized_content = content
+    
     # Combine all prompts into a single comprehensive prompt for efficiency
     combined_prompt = """
-    Analyze the following document content and extract structured insights about the company 
-    using value investing principles (Benjamin Graham/Warren Buffett approach).
+    Analyze the following company document and extract structured insights using value investing principles.
     
-    Format your response as HTML sections with these headings:
+    INSTRUCTIONS:
+    - Keep your analysis very concise (1-2 sentences per section)
+    - Focus only on facts found in the document, not general advice
+    - Format as HTML sections with these exact headings:
     
     <h4>Business Summary</h4>
-    [Explain what the company does, its industry, and customers]
+    [1-2 sentences on what the company does, its industry, and customers]
     
     <h4>Competitive Moat</h4>
-    [Any competitive advantages, barriers to entry, brand strength]
+    [1-2 sentences on any competitive advantages or barriers to entry]
     
     <h4>Financial Health</h4>
-    [Key insights about revenue, profitability, debt levels, cash flow]
+    [1-2 sentences on revenue, profitability, debt levels, cash flow]
     
     <h4>Management Analysis</h4>
-    [Leadership quality, capital allocation, integrity]
+    [1-2 sentences on leadership quality and capital allocation]
     
     DOCUMENT CONTENT:
     {content}
@@ -221,11 +324,11 @@ def generate_insights_with_huggingface(content):
         API_URL = f"https://api-inference.huggingface.co/models/{model_name}"
         
         payload = {
-            "inputs": combined_prompt.format(content=content[:10000]),  # Smaller content limit for open source models
+            "inputs": combined_prompt.format(content=optimized_content[:6000]),  # Much smaller content limit for fast performance
             "parameters": {
-                "max_new_tokens": 1500,
-                "temperature": 0.3,
-                "top_p": 0.95,
+                "max_new_tokens": 800,  # Shorter responses
+                "temperature": 0.2,     # More focused responses
+                "top_p": 0.85,          # More deterministic
                 "return_full_text": False
             }
         }

@@ -61,8 +61,10 @@ def process_10k(cik):
         db.session.commit()
         
         # Start processing in a background thread with app context
+        from app import app
+        
         def process_with_app_context(doc_id):
-            with current_app.app_context():
+            with app.app_context():
                 process_document(doc_id)
                 
         thread = threading.Thread(target=process_with_app_context, args=(document.id,))

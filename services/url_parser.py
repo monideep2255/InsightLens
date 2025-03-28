@@ -105,7 +105,22 @@ def extract_url_content(url):
                     return extracted_text
                 
             # If we're still here, try to get a filing that's not using iXBRL
-            return extract_sec_10k_alternative(url)
+            # Use a maximum content limit for better performance
+            limited_content = extract_sec_10k_alternative(url)
+            # Limit to 100K characters to speed up processing
+            MAX_CONTENT_LENGTH = 100000
+            if len(limited_content) > MAX_CONTENT_LENGTH:
+                logger.info(f"Truncating large document from {len(limited_content)} to {MAX_CONTENT_LENGTH} characters")
+                # Extract the beginning content
+                beginning = limited_content[:int(MAX_CONTENT_LENGTH * 0.4)]
+                # Extract the middle section
+                middle_start = int(len(limited_content) * 0.4)
+                middle = limited_content[middle_start:middle_start + int(MAX_CONTENT_LENGTH * 0.3)]
+                # Extract the end content
+                end = limited_content[-int(MAX_CONTENT_LENGTH * 0.3):]
+                # Combine the parts with a note about truncation
+                return beginning + "\n\n[...CONTENT TRUNCATED FOR PERFORMANCE...]\n\n" + middle + "\n\n[...CONTENT TRUNCATED FOR PERFORMANCE...]\n\n" + end
+            return limited_content
         else:
             # For non-SEC or regular SEC pages, use standard Trafilatura extraction
             text = trafilatura.extract(downloaded)
@@ -124,6 +139,21 @@ def extract_url_content(url):
                 raise ValueError("Insufficient content extracted from the URL")
         
         logger.info(f"Successfully extracted content from URL: {url}")
+        
+        # Limit content length for all types of URLs for better performance
+        MAX_CONTENT_LENGTH = 100000
+        if text and len(text) > MAX_CONTENT_LENGTH:
+            logger.info(f"Truncating large document from {len(text)} to {MAX_CONTENT_LENGTH} characters")
+            # Extract the beginning content
+            beginning = text[:int(MAX_CONTENT_LENGTH * 0.4)]
+            # Extract the middle section
+            middle_start = int(len(text) * 0.4)
+            middle = text[middle_start:middle_start + int(MAX_CONTENT_LENGTH * 0.3)]
+            # Extract the end content
+            end = text[-int(MAX_CONTENT_LENGTH * 0.3):]
+            # Combine the parts with a note about truncation
+            return beginning + "\n\n[...CONTENT TRUNCATED FOR PERFORMANCE...]\n\n" + middle + "\n\n[...CONTENT TRUNCATED FOR PERFORMANCE...]\n\n" + end
+        
         return text
         
     except Exception as e:

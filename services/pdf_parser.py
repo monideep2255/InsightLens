@@ -16,20 +16,25 @@ def extract_pdf_content(pdf_path):
         # First, verify the PDF is valid
         num_pages = validate_pdf(pdf_path)
         
-        # For large PDFs (over 100 pages), use fast extraction with page sampling
+        # For very large PDFs (over 100 pages), use fast extraction with page sampling
         # This will sample important pages rather than process the entire document
         if num_pages > 100:
             logger.info(f"Large PDF detected ({num_pages} pages). Using optimized extraction.")
             return extract_pdf_content_fast(pdf_path, num_pages)
         
+        # For medium-sized PDFs (30-100 pages), use a hybrid approach for better performance
+        elif num_pages > 30:
+            logger.info(f"Medium-sized PDF detected ({num_pages} pages). Using semi-optimized extraction.")
+            return extract_pdf_content_medium(pdf_path, num_pages)
+        
         # For smaller PDFs, use LangChain's PyPDFLoader
         loader = PyPDFLoader(pdf_path)
         documents = loader.load()
         
-        # Split into smaller chunks if needed
+        # Split into smaller chunks if needed - increase chunk size for better performance
         text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=2000,
-            chunk_overlap=200
+            chunk_size=3000,  # Larger chunks for better performance
+            chunk_overlap=150  # Smaller overlap
         )
         
         # Get all chunks
@@ -82,6 +87,50 @@ def extract_pdf_content_fast(pdf_path, total_pages):
             # Always include last few pages (conclusions, signatures of executives)
             if total_pages > 10:
                 pages_to_extract.extend(range(max(0, total_pages - 5), total_pages))
+            
+            # Remove duplicates and sort
+            pages_to_extract = sorted(set(pages_to_extract))
+            
+            # Extract text from selected pages
+            content = []
+            for i in pages_to_extract:
+                if i < len(reader.pages):
+                    page = reader.pages[i]
+                    content.append(page.extract_text())
+            
+            # Join all extracted text
+            text = "\n\n".join(content)
+            
+            logger.info(f"Successfully extracted content from {len(pages_to_extract)} pages out of {total_pages}")
+            return text
+            
+    except Exception as e:
+        logger.error(f"Error extracting content from PDF {pdf_path}: {str(e)}")
+        raise Exception(f"Failed to extract content from PDF: {str(e)}")
+
+def extract_pdf_content_medium(pdf_path, total_pages):
+    """
+    Extract content from a medium-sized PDF by processing key pages and sampling others
+    This is a balance between comprehensive extraction and performance
+    """
+    try:
+        with open(pdf_path, 'rb') as f:
+            reader = PyPDF2.PdfReader(f)
+            
+            # Define which pages to extract based on document size
+            pages_to_extract = []
+            
+            # Always include first 10 pages (table of contents, intro)
+            pages_to_extract.extend(range(min(10, total_pages)))
+            
+            # For the middle section, take every 3rd page
+            if total_pages > 20:
+                middle_start = 10
+                middle_end = total_pages - 5
+                pages_to_extract.extend(range(middle_start, middle_end, 3))
+            
+            # Always include last 5 pages
+            pages_to_extract.extend(range(max(0, total_pages - 5), total_pages))
             
             # Remove duplicates and sort
             pages_to_extract = sorted(set(pages_to_extract))
