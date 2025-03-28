@@ -2,8 +2,9 @@ import os
 import logging
 from datetime import datetime
 from werkzeug.utils import secure_filename
+from flask import current_app
 
-from app import app, db
+from app import db
 from models import Document, Insight, Processing
 from services.pdf_parser import extract_pdf_content
 from services.url_parser import extract_url_content
@@ -31,7 +32,8 @@ def process_document(document_id):
     try:
         # Extract content based on document type
         if document.content_type == 'pdf':
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], document.filename)
+            upload_folder = current_app.config['UPLOAD_FOLDER']
+            file_path = os.path.join(upload_folder, document.filename)
             if not os.path.exists(file_path):
                 raise FileNotFoundError(f"PDF file not found: {file_path}")
             
@@ -90,7 +92,8 @@ def save_uploaded_file(file):
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
     unique_filename = f"{timestamp}_{filename}"
     
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+    upload_folder = current_app.config['UPLOAD_FOLDER']
+    file_path = os.path.join(upload_folder, unique_filename)
     file.save(file_path)
     
     return unique_filename

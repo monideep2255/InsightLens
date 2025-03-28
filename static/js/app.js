@@ -8,6 +8,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const uploadStatus = document.getElementById('upload-status');
     const loadingBackdrop = document.getElementById('loading-backdrop');
     
+    // Hide loading backdrop on initial page load
+    if (loadingBackdrop) {
+        loadingBackdrop.classList.add('d-none');
+    }
+    
     // Check if elements exist before adding event listeners
     if (uploadArea) {
         // Drag and drop functionality
@@ -145,8 +150,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // Hide loading backdrop if insights are already loaded
             loadingBackdrop.classList.add('d-none');
         }
-    } else if (loadingBackdrop && !uploadForm) {
-        // Hide loading backdrop on pages that don't need it
+    } else if (loadingBackdrop) {
+        // Always hide loading backdrop if not on an insight page with processing
         loadingBackdrop.classList.add('d-none');
     }
 });
