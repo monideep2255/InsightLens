@@ -121,17 +121,38 @@ def generate_insights(content):
     Returns a dictionary mapping insight categories to their content
     """
     # Choose the appropriate model based on configuration
-    if AI_MODEL_TYPE == "openai" and OPENAI_AVAILABLE:
-        return generate_insights_with_openai(content)
-    elif AI_MODEL_TYPE == "huggingface":
-        return generate_insights_with_huggingface(content)
-    else:
-        logger.error(f"Invalid AI model type: {AI_MODEL_TYPE}")
+    try:
+        if AI_MODEL_TYPE == "openai" and OPENAI_AVAILABLE:
+            return generate_insights_with_openai(content)
+        elif AI_MODEL_TYPE == "huggingface":
+            return generate_insights_with_huggingface(content)
+        else:
+            logger.error(f"Invalid AI model type: {AI_MODEL_TYPE}")
+            return {
+                'business_summary': "<p>AI model configuration error. Please check server logs.</p>",
+                'moat': "<p>AI model configuration error. Please check server logs.</p>",
+                'financial': "<p>AI model configuration error. Please check server logs.</p>",
+                'management': "<p>AI model configuration error. Please check server logs.</p>"
+            }
+    except Exception as e:
+        logger.error(f"All AI models failed to generate insights: {str(e)}")
+        error_message = str(e)
+        
+        # Check for quota exceeded messages
+        if "quota" in error_message.lower() or "429" in error_message:
+            return {
+                'business_summary': "<p>OpenAI API quota exceeded. Please check your account billing or try again later.</p>",
+                'moat': "<p>OpenAI API quota exceeded. Please check your account billing or try again later.</p>",
+                'financial': "<p>OpenAI API quota exceeded. Please check your account billing or try again later.</p>",
+                'management': "<p>OpenAI API quota exceeded. Please check your account billing or try again later.</p>"
+            }
+        
+        # Generic error fallback
         return {
-            'business_summary': "<p>AI model configuration error. Please check server logs.</p>",
-            'moat': "<p>AI model configuration error. Please check server logs.</p>",
-            'financial': "<p>AI model configuration error. Please check server logs.</p>",
-            'management': "<p>AI model configuration error. Please check server logs.</p>"
+            'business_summary': f"<p>Unable to generate insights. Error: {error_message}</p>",
+            'moat': f"<p>Unable to generate insights. Error: {error_message}</p>",
+            'financial': f"<p>Unable to generate insights. Error: {error_message}</p>",
+            'management': f"<p>Unable to generate insights. Error: {error_message}</p>"
         }
 
 def generate_insights_with_openai(content):

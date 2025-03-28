@@ -189,34 +189,63 @@ When you click "Analyze with AI" on any document (SEC EDGAR, URL, or PDF), the s
 4. Wait for processing to complete (large PDFs use smart sampling for faster processing)
 5. View the AI-generated insights organized by category
 
-## Error Handling
+## Performance Optimizations
 
-- **Input Validation**
-  - PDF file format and size validation
-  - URL format and accessibility checking
-  - SEC CIK number validation
-  
-- **Processing Monitoring**
-  - Real-time status updates using AJAX
-  - Background task tracking in database
-  - Timeout handling for long-running processes
-  
-- **SEC API Compliance**
-  - Custom User-Agent headers to prevent 403 errors
-  - Rate limiting implementation
-  - Error handling for API changes or service disruptions
-  
-- **PDF Processing Optimization**
-  - Fallback to page sampling for large documents
-  - Intelligent section extraction
-  - Error handling for corrupted PDFs
-  
-- **AI Service Integration**
-  - Support for multiple AI model providers (OpenAI and Hugging Face)
-  - Environment variable configuration for easy model switching
-  - Error handling for API limits and timeouts
-  - Retry logic for transient failures
-  - Proper error messages for failed analysis
+The application has been optimized for better performance and faster processing:
+
+- **Document Content Optimization**
+  - Smart content selection for large documents (beginning, middle, end extraction)
+  - Content truncation to stay within optimal AI model token limits
+  - Intelligent summary generation for large documents before analysis
+
+- **AI Processing Optimizations**
+  - Two-stage AI processing for large documents (summary → detailed analysis)
+  - Reduced temperature settings for more focused, concise responses
+  - Proper prompt engineering to reduce token usage and improve efficiency
+
+- **SEC Edgar Processing**
+  - Multiple fallback mechanisms for different SEC document formats
+  - Special handling for iXBRL documents with direct text extraction
+  - Automatic fallback to SEC TXT format for faster processing
+
+- **PDF Processing**
+  - Three-tier processing for different PDF sizes:
+    - Full extraction for small documents (<30 pages)
+    - Sample every 3rd page for medium-sized documents (30-100 pages)
+    - Strategic sampling for large documents (>100 pages)
+  - Intelligent page selection focusing on key document sections
+
+- **URL Processing**
+  - Enhanced user agent settings to prevent access blocking
+  - Multi-stage content extraction with fallbacks
+  - Special handlers for problematic domains (Amazon IR, etc.)
+  - Automatic handling for 403/401 errors with alternative extraction methods
+
+## Known Limitations
+
+- **OpenAI API Quota**
+  - The application relies on OpenAI's API for insight generation
+  - Free API keys have limited quota and may encounter "insufficient_quota" errors
+  - Consider upgrading to a paid OpenAI plan or switching to Hugging Face models
+
+- **Restricted Websites**
+  - Some financial websites (like ir.aboutamazon.com) block scraping attempts
+  - Alternative content is provided for these sites with a notice to the user
+  - For best results, use SEC EDGAR directly for these companies
+
+- **Large PDF Performance**
+  - Very large PDFs (>500 pages) will use intelligent sampling
+  - This sampling may miss some content details but captures key sections
+  - Analysis quality depends on the document structure and content distribution
+
+- **SEC API Rate Limits**
+  - Heavy usage of SEC EDGAR API may trigger rate limiting
+  - Implement proper throttling in high-traffic scenarios
+
+- **AI Analysis Limitations**
+  - Analysis quality depends on document content quality and relevance
+  - Numerical interpretations may vary depending on document context
+  - Financial insights require proper context from official documents
 
 ## Local Development Setup
 
