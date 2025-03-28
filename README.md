@@ -102,7 +102,9 @@ InsightLens is an AI-powered tool that analyzes company documents through the le
 - **SQLAlchemy**: ORM for database operations
 - **PostgreSQL**: Database for storing documents and insights
 - **LangChain**: Framework for document processing and text manipulation
-- **OpenAI API**: AI model for generating insights (using gpt-4o)
+- **AI Integration**:
+  - **OpenAI API** (default): Primary AI model for generating insights (using gpt-4o)
+  - **Hugging Face API** (alternative): Support for open source models (Mistral, Llama 3, DeepSeek)
 - **Trafilatura**: Library for extracting content from web pages
 - **PyPDF2**: Library for PDF processing with intelligent page sampling
 - **BeautifulSoup4**: Library for HTML parsing and SEC EDGAR document processing
@@ -140,14 +142,38 @@ InsightLens is an AI-powered tool that analyzes company documents through the le
   - started_at (processing start timestamp)
   - completed_at (processing end timestamp)
 
+## AI Model Selection Process
+
+When you click "Analyze with AI" on any document (SEC EDGAR, URL, or PDF), the system follows this process:
+
+1. **Model Selection**: The system checks which AI provider to use based on environment variables:
+   - `AI_MODEL_TYPE=openai` (default): Uses OpenAI's GPT-4o model
+   - `AI_MODEL_TYPE=huggingface`: Uses models from Hugging Face
+   
+2. **Hugging Face Model Selection**: If using Hugging Face, the system selects a specific model:
+   - `HUGGINGFACE_MODEL=mistral` (default): Uses Mistral model
+   - `HUGGINGFACE_MODEL=llama3`: Uses Llama 3 model
+   - `HUGGINGFACE_MODEL=deepseek`: Uses DeepSeek model
+
+3. **Document Processing**: The system extracts and preprocesses text content from the document
+
+4. **Insight Generation**: For each insight category (Business Summary, Moat, Financial Health, Management), 
+   the system sends customized prompts to the selected AI model
+
+5. **Response Processing**: The system formats and stores the AI responses in the database
+
 ## Usage
 
 ### SEC EDGAR Search (Recommended Method)
 1. Click on "SEC Search" in the navigation menu
-2. Enter a company name in the search box
+2. Enter a company name in the search box (e.g., "Apple" or "Microsoft")
 3. Select the company from the search results
-4. The system will automatically fetch and analyze the latest 10-K filing
-5. View the AI-generated insights organized by category
+4. **Important**: The system will locate the most recent 10-K (annual report) filing. Look for:
+   - The filing with "10-K" in the description
+   - The most recent date (typically the top result)
+   - Avoid selecting other filing types like 10-Q (quarterly reports) or 8-K (current reports)
+5. The system will automatically fetch and analyze the selected 10-K filing
+6. View the AI-generated insights organized by category
 
 ### URL Analysis
 1. Visit the home page
@@ -186,6 +212,8 @@ InsightLens is an AI-powered tool that analyzes company documents through the le
   - Error handling for corrupted PDFs
   
 - **AI Service Integration**
+  - Support for multiple AI model providers (OpenAI and Hugging Face)
+  - Environment variable configuration for easy model switching
   - Error handling for API limits and timeouts
   - Retry logic for transient failures
   - Proper error messages for failed analysis
@@ -196,7 +224,9 @@ InsightLens is an AI-powered tool that analyzes company documents through the le
 
 - Python 3.11 or higher
 - PostgreSQL (local installation or Docker)
-- OpenAI API key (for AI-powered analysis)
+- Either one of the following:
+  - OpenAI API key (default option for AI-powered analysis)
+  - Hugging Face API key (alternative for using open source models)
 
 ### Installation Steps
 
@@ -220,9 +250,20 @@ InsightLens is an AI-powered tool that analyzes company documents through the le
 4. **Set up environment variables**
    Create a `.env` file in the project root with the following content:
    ```
+   # Required configuration
    FLASK_SECRET_KEY=your_random_secret_key
    DATABASE_URL=postgresql://username:password@localhost:5432/insightlens
+   
+   # AI model configuration (choose one provider)
+   
+   # Option 1: OpenAI (default)
    OPENAI_API_KEY=your_openai_api_key
+   AI_MODEL_TYPE=openai
+   
+   # Option 2: Hugging Face (alternative)
+   # HUGGINGFACE_API_KEY=your_huggingface_api_key
+   # AI_MODEL_TYPE=huggingface
+   # HUGGINGFACE_MODEL=mistral  # Options: mistral (default), llama3, deepseek
    ```
 
 5. **Set up the database**

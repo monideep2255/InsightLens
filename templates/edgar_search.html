@@ -40,6 +40,16 @@
                         No companies found matching your search. Try a different name or spelling.
                     </div>
                 {% else %}
+                    <!-- Guide for users -->
+                    <div class="alert alert-info mb-3" role="alert">
+                        <h5><i class="fas fa-info-circle me-2"></i>How to use these results:</h5>
+                        <ol class="mb-0">
+                            <li>The system will automatically select the most recent 10-K filing</li>
+                            <li>A 10-K is an annual report required by the SEC for public companies</li>
+                            <li>This provides comprehensive financial information and business details</li>
+                        </ol>
+                    </div>
+                    
                     <div class="list-group">
                         {% for company in companies %}
                             <div class="list-group-item list-group-item-action">
@@ -48,8 +58,8 @@
                                     <small>CIK: {{ company.cik }}</small>
                                 </div>
                                 <div class="mt-2">
-                                    <a href="{{ url_for('edgar.process_10k', cik=company.cik) }}" class="btn btn-outline-primary btn-sm">
-                                        Process Latest 10-K
+                                    <a href="{{ url_for('edgar.process_10k', cik=company.cik) }}" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-file-alt me-1"></i> Process Latest 10-K
                                     </a>
                                 </div>
                             </div>
