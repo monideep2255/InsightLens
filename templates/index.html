@@ -32,6 +32,16 @@
                             <label class="form-check-label" for="url-option">Enter URL</label>
                         </div>
                     </div>
+                    
+                    <div class="alert alert-info mb-4">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-search-dollar fa-2x me-3"></i>
+                            <div>
+                                <strong>SEC EDGAR Search:</strong> 
+                                <p class="mb-0">Looking for 10-K reports? Try our <a href="{{ url_for('edgar.search') }}" class="alert-link">SEC EDGAR Search</a> to directly search and analyze company filings.</p>
+                            </div>
+                        </div>
+                    </div>
 
                     <div id="file-container" class="mb-3">
                         <div id="upload-area" class="upload-area text-center">
@@ -129,7 +139,7 @@
                 <div class="mt-4">
                     <h5>How it works</h5>
                     <ol>
-                        <li>Upload a PDF document or provide a URL to company information</li>
+                        <li>Upload a PDF document, provide a URL, or use our SEC EDGAR search to find company information</li>
                         <li>Our AI analyzes the content using value investing principles</li>
                         <li>View structured insight cards highlighting key aspects of the business</li>
                         <li>Make more informed decisions about companies</li>

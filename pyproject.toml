@@ -17,4 +17,5 @@ dependencies = [
     "sqlalchemy>=2.0.40",
     "trafilatura>=2.0.0",
     "langchain-text-splitters>=0.3.7",
+    "beautifulsoup4>=4.13.3",
 ]

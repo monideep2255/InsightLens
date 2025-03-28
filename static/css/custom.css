@@ -1,5 +1,28 @@
 /* Custom Styles for InsightLens */
 
+/* Global Responsive Styles */
+body {
+  overflow-x: hidden;
+}
+
+/* Make container width responsive */
+.container {
+  width: 100%;
+  padding-right: 15px;
+  padding-left: 15px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+/* Mobile first approach */
+.container-fluid {
+  width: 100%;
+  padding-right: 15px;
+  padding-left: 15px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
 /* Loading backdrop */
 .loading-backdrop {
   position: fixed;
@@ -54,6 +77,34 @@
   margin-right: 0.5rem;
 }
 
+/* Card title styling */
+.card-title-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.card-icon {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10px;
+}
+
+@media (max-width: 576px) {
+  .card-title {
+    font-size: 1rem;
+  }
+  
+  .card-icon {
+    width: 30px;
+    height: 30px;
+    font-size: 0.8rem;
+  }
+}
+
 /* Hero section */
 .hero {
   padding: 3rem 0;
@@ -88,4 +139,82 @@
   border-width: 2px;
   border-style: solid;
   border-image-slice: 1;
+}
+
+/* Responsive styles for different devices */
+@media (max-width: 767.98px) {
+  /* Mobile view adjustments */
+  .display-4 {
+    font-size: 2rem;
+  }
+  
+  .lead {
+    font-size: 1rem;
+  }
+  
+  .insight-card {
+    margin-bottom: 1rem;
+  }
+  
+  .insight-card:hover {
+    transform: none; /* Disable hover effects on mobile */
+  }
+  
+  .card-body {
+    padding: 1rem;
+  }
+  
+  /* Adjust form elements for better mobile experience */
+  .form-control, .input-group {
+    font-size: 16px; /* Prevent zoom on input focus on iOS */
+  }
+  
+  /* Fix for SEC EDGAR search section on mobile */
+  .alert-info .d-flex {
+    flex-direction: column;
+  }
+  
+  .alert-info .fa-2x {
+    margin-bottom: 0.5rem;
+    margin-right: 0;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 991.98px) {
+  /* Tablet view adjustments */
+  .display-4 {
+    font-size: 2.5rem;
+  }
+  
+  .card-body {
+    padding: 1.25rem;
+  }
+}
+
+/* Fix for overflowing content in mobile view */
+.card {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+/* Ensure upload area looks good on mobile */
+.upload-area {
+  padding: 1.5rem;
+  border: 2px dashed var(--bs-info);
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 575.98px) {
+  .upload-area {
+    padding: 1rem;
+  }
+  
+  .upload-area h5 {
+    font-size: 1rem;
+  }
+  
+  .upload-area .fa-3x {
+    font-size: 2em;
+  }
 }
