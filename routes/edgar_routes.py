@@ -64,13 +64,19 @@ def process_10k(cik):
         if not company_name and cik in magnificent_7:
             company_name = magnificent_7[cik]
             
+        # Check if we should use demo mode (from URL parameter)
+        use_demo_mode = request.args.get('demo_mode') == 'true' or request.args.get('demo') == 'true'
+        use_local_processing = request.args.get('local_processing') == 'true'
+        
         # Create a new document with better metadata
         document = Document(
             url=filing_url,
             content_type='edgar',  # Use 'edgar' type instead of 'url' for better handling
             title=f"10-K Filing: {company_name or 'Unknown Company'}",
             company_name=company_name,
-            cik=cik
+            cik=cik,
+            use_demo_mode=use_demo_mode,
+            use_local_processing=use_local_processing
         )
         db.session.add(document)
         db.session.commit()

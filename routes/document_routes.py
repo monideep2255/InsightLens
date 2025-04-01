@@ -16,7 +16,7 @@ def index():
 
 @bp.route('/upload', methods=['POST'])
 def upload_document():
-    """Handle document upload (PDF or URL)"""
+    """Handle document upload (PDF only)"""
     upload_type = request.form.get('upload_type', 'file')
     
     # Processing options
@@ -67,37 +67,6 @@ def upload_document():
             db.session.add(document)
             db.session.commit()
             
-        elif upload_type == 'url':
-            # Handle URL input
-            url = request.form.get('url')
-            if not url or len(url.strip()) == 0 and not use_demo_mode:
-                flash('Please enter a valid URL', 'danger')
-                return redirect(request.url)
-            
-            if use_demo_mode:
-                # Create demo document with URL type
-                document = Document(
-                    url="https://example.com/demo",
-                    content_type='url',
-                    use_demo_mode=True,
-                    use_local_processing=use_local_processing,
-                    company_name=company_name,
-                    title=f"Demo: {company_name}" if company_name else "Demo URL Document"
-                )
-            else:
-                # Create new document in database
-                document = Document(
-                    url=url,
-                    content_type='url',
-                    use_demo_mode=use_demo_mode,
-                    use_local_processing=use_local_processing,
-                    company_name=company_name,
-                    title=f"{company_name}" if company_name else url
-                )
-            
-            db.session.add(document)
-            db.session.commit()
-            
         elif upload_type == 'quick_edgar':
             # Handle quick access to SEC EDGAR for the Magnificent 7 companies
             cik = request.form.get('cik')
@@ -137,10 +106,23 @@ def upload_document():
                 db.session.add(document)
                 db.session.commit()
             else:
+                # Pass along demo_mode and local_processing URL parameters if they're set
+                demo_mode_param = request.args.get('demo_mode')
+                demo_param = request.args.get('demo')
+                local_processing_param = request.args.get('local_processing')
+                
+                url_params = {'cik': cik, 'company_name': company_name}
+                
+                # Add params only if they exist
+                if demo_mode_param:
+                    url_params['demo_mode'] = demo_mode_param
+                if demo_param:
+                    url_params['demo'] = demo_param
+                if local_processing_param:
+                    url_params['local_processing'] = local_processing_param
+                    
                 # For real processing, redirect to the edgar route which has better handling
-                return redirect(url_for('edgar.process_10k', 
-                                        cik=cik, 
-                                        company_name=company_name))
+                return redirect(url_for('edgar.process_10k', **url_params))
         else:
             flash('Invalid upload type', 'danger')
             return redirect(request.url)

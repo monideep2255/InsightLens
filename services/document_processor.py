@@ -7,7 +7,6 @@ from flask import current_app
 from app import db, app
 from models import Document, Insight, Processing, ApiUsage
 from services.pdf_parser import extract_pdf_content
-from services.url_parser import extract_url_content
 from services.ai_service import generate_insights
 # Import the demo service
 from services.demo_service import generate_demo_insights, perform_local_analysis
@@ -72,8 +71,6 @@ def process_document(document_id):
                     raise FileNotFoundError(f"PDF file not found: {file_path}")
                 
                 content = extract_pdf_content(file_path)
-            elif document.content_type == 'url':
-                content = extract_url_content(document.url)
             elif document.content_type == 'edgar' and EDGAR_SERVICE_AVAILABLE:
                 # If we have a CIK, use that to get the 10-K directly
                 if document.cik:

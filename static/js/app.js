@@ -4,6 +4,23 @@ document.addEventListener('DOMContentLoaded', function() {
     const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
+    
+    // Check for demo mode URL parameter and enable it if present
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('demo_mode') || urlParams.has('demo')) {
+        const demoCheckbox = document.getElementById('demo-mode');
+        const demoModeContainer = document.querySelector('.mb-4.border-top.pt-3.d-none');
+        
+        if (demoCheckbox) {
+            // Enable demo mode checkbox
+            demoCheckbox.checked = true;
+            
+            // Show the demo mode container
+            if (demoModeContainer) {
+                demoModeContainer.classList.remove('d-none');
+            }
+        }
+    }
     // Theme toggling functionality
     const themeToggleBtn = document.getElementById('theme-toggle');
     const darkIcon = document.getElementById('dark-icon');
@@ -74,7 +91,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // File upload handling
     const uploadArea = document.getElementById('upload-area');
     const fileInput = document.getElementById('file-input');
-    const urlInput = document.getElementById('url-input');
     const uploadForm = document.getElementById('upload-form');
     const uploadButton = document.getElementById('upload-button');
     const uploadStatus = document.getElementById('upload-status');
@@ -86,11 +102,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Variables for input options and containers
-    const urlOption = document.getElementById('url-option');
     const fileOption = document.getElementById('file-option');
     const secOption = document.getElementById('sec-option');
     const quickEdgarOption = document.getElementById('quick-edgar-option');
-    const urlContainer = document.getElementById('url-container');
     const fileContainer = document.getElementById('file-container');
     const secContainer = document.getElementById('sec-container');
     const quickEdgarContainer = document.getElementById('quick-edgar-container');
@@ -101,7 +115,6 @@ document.addEventListener('DOMContentLoaded', function() {
         secContainer.classList.remove('d-none');
         secInfo.classList.remove('d-none');
         fileContainer.classList.add('d-none');
-        urlContainer.classList.add('d-none');
         if (quickEdgarContainer) quickEdgarContainer.classList.add('d-none');
         uploadButton.innerHTML = '<i class="fas fa-search-dollar me-2"></i>Search SEC EDGAR';
     }
@@ -155,8 +168,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 let fileName = fileInput.files[0].name;
                 document.getElementById('file-name').textContent = fileName;
                 document.getElementById('file-display').classList.remove('d-none');
-                // Clear URL input since we're uploading a file
-                urlInput.value = '';
             }
         });
     }
@@ -173,11 +184,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!fileInput.files.length || fileInput.files.length === 0) {
                     isValid = false;
                     errorMessage = 'Please select a PDF file to upload';
-                }
-            } else if (selectedOption === 'url') {
-                if (!urlInput.value || urlInput.value.trim() === '') {
-                    isValid = false;
-                    errorMessage = 'Please enter a valid URL';
                 }
             } else if (selectedOption === 'sec') {
                 if (!companyName.value || companyName.value.trim() === '') {
@@ -222,39 +228,17 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Toggle between URL, File, SEC EDGAR, and Quick 10-K options
+    // Toggle between File, SEC EDGAR, and Quick 10-K options
     
-    if (urlOption && fileOption && secOption && quickEdgarOption) {
-        urlOption.addEventListener('change', function() {
-            if (this.checked) {
-                urlContainer.classList.remove('d-none');
-                fileContainer.classList.add('d-none');
-                secContainer.classList.add('d-none');
-                secInfo.classList.add('d-none');
-                
-                // Clear other inputs
-                if (fileInput) fileInput.value = '';
-                if (document.getElementById('file-display')) {
-                    document.getElementById('file-display').classList.add('d-none');
-                }
-                if (document.getElementById('company-name')) {
-                    document.getElementById('company-name').value = '';
-                }
-                
-                // Update button text
-                uploadButton.innerHTML = '<i class="fas fa-search me-2"></i>Analyze with AI';
-            }
-        });
+    if (fileOption && secOption && quickEdgarOption) {
         
         fileOption.addEventListener('change', function() {
             if (this.checked) {
                 fileContainer.classList.remove('d-none');
-                urlContainer.classList.add('d-none');
                 secContainer.classList.add('d-none');
                 secInfo.classList.add('d-none');
                 
                 // Clear other inputs
-                if (urlInput) urlInput.value = '';
                 if (document.getElementById('company-name')) {
                     document.getElementById('company-name').value = '';
                 }
@@ -269,12 +253,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 secContainer.classList.remove('d-none');
                 secInfo.classList.remove('d-none');
                 fileContainer.classList.add('d-none');
-                urlContainer.classList.add('d-none');
                 if (quickEdgarContainer) quickEdgarContainer.classList.add('d-none');
                 
                 // Clear other inputs
                 if (fileInput) fileInput.value = '';
-                if (urlInput) urlInput.value = '';
                 if (document.getElementById('file-display')) {
                     document.getElementById('file-display').classList.add('d-none');
                 }
@@ -291,11 +273,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 secContainer.classList.add('d-none');
                 secInfo.classList.add('d-none');
                 fileContainer.classList.add('d-none');
-                urlContainer.classList.add('d-none');
                 
                 // Clear other inputs
                 if (fileInput) fileInput.value = '';
-                if (urlInput) urlInput.value = '';
                 if (document.getElementById('file-display')) {
                     document.getElementById('file-display').classList.add('d-none');
                 }

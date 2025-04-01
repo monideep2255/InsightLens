@@ -31,10 +31,7 @@
                             <input class="form-check-input" type="radio" name="upload_type" id="quick-edgar-option" value="quick_edgar">
                             <label class="form-check-label" for="quick-edgar-option" data-bs-toggle="tooltip" title="Directly access latest 10-K filings for popular companies">Quick 10-K Access</label>
                         </div>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="upload_type" id="url-option" value="url">
-                            <label class="form-check-label" for="url-option" data-bs-toggle="tooltip" title="Analyze content from a company website, investor relations page, or online financial report (most websites supported)">Enter URL</label>
-                        </div>
+                        <!-- URL option removed as requested -->
                         <div class="form-check form-check-inline">
                             <input class="form-check-input" type="radio" name="upload_type" id="file-option" value="file">
                             <label class="form-check-label" for="file-option" data-bs-toggle="tooltip" title="Upload a PDF file containing company information, annual reports, or investor presentations">Upload PDF</label>
@@ -83,22 +80,7 @@
                         </div>
                     </div>
 
-                    <div id="url-container" class="mb-3 d-none">
-                        <label for="url-input" class="form-label">Website URL</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="fas fa-link"></i></span>
-                            <input type="url" class="form-control" id="url-input" name="url" 
-                                   placeholder="https://example.com/company-info">
-                        </div>
-                        <div class="form-text">
-                            Enter a URL to any of these:
-                            <ul class="mt-1 mb-0">
-                                <li>Company website (investor relations section works best)</li>
-                                <li>Annual report/financial report online page (not PDF)</li>
-                                <li>Company blog or news release about financial performance</li>
-                            </ul>
-                        </div>
-                    </div>
+                    <!-- URL container removed as requested -->
 
                     <div id="sec-container" class="mb-3">
                         <label for="company-name" class="form-label">Company Name</label>
@@ -212,7 +194,7 @@
                 <div class="mt-4">
                     <h5>How it works</h5>
                     <ol>
-                        <li>Use our SEC EDGAR search, provide a URL, or upload a PDF document to find company information</li>
+                        <li>Use our SEC EDGAR search, Quick 10-K for Magnificent 7, or upload a PDF document</li>
                         <li>Our AI analyzes the content using value investing principles</li>
                         <li>View structured insight cards highlighting key aspects of the business</li>
                         <li>Make more informed decisions about companies</li>
