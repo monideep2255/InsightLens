@@ -88,8 +88,15 @@ def process_document(document_id):
             else:
                 raise ValueError(f"Unsupported content type: {document.content_type}")
             
-            if not content or len(content.strip()) < 100:
-                raise ValueError("Could not extract sufficient content from the document")
+            if not content:
+                raise ValueError("Could not extract any content from the document. The document may be empty or in an unsupported format.")
+                
+            if len(content.strip()) < 500:
+                logger.warning(f"Document {document_id} has very little content: {len(content.strip())} characters")
+                
+                # For 10-K filings, provide a more specific error message
+                if document.content_type == 'edgar':
+                    raise ValueError("Could not extract sufficient content from the SEC filing. This could be due to the filing using a newer format that our system cannot process. Please try a different company or upload a PDF version of the 10-K if available.")
             
             # Generate insights using either AI or local processing
             if document.use_local_processing:

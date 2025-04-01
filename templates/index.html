@@ -41,8 +41,8 @@
                         </div>
                     </div>
                     
-                    <!-- Processing Options -->
-                    <div class="mb-4 border-top pt-3">
+                    <!-- Processing Options (Hidden from regular users) -->
+                    <div class="mb-4 border-top pt-3 d-none">
                         <h6 class="mb-2">Processing Options</h6>
                         <div class="form-check mb-2">
                             <input class="form-check-input" type="checkbox" name="use_demo_mode" id="demo-mode">
@@ -124,15 +124,15 @@
                             <option value="0000789019" data-company="Microsoft Corporation">Microsoft Corporation (MSFT)</option>
                             <option value="0001018724" data-company="Amazon.com, Inc.">Amazon.com, Inc. (AMZN)</option>
                             <option value="0001652044" data-company="Alphabet Inc.">Alphabet Inc. (Google) (GOOGL)</option>
-                            <option value="0001326801" data-company="Meta Platforms, Inc.">Meta Platforms, Inc. (Facebook) (META)</option>
+                            <option value="0001326801" data-company="Meta Platforms, Inc.">Meta Platforms, Inc. (META)</option>
                             <option value="0001318605" data-company="Tesla, Inc.">Tesla, Inc. (TSLA)</option>
-                            <option value="0001067983" data-company="Berkshire Hathaway Inc.">Berkshire Hathaway Inc. (BRK.A)</option>
-                            <option value="0000019617" data-company="JPMorgan Chase & Co.">JPMorgan Chase & Co. (JPM)</option>
-                            <option value="0000200406" data-company="Johnson & Johnson">Johnson & Johnson (JNJ)</option>
-                            <option value="0000104169" data-company="Walmart Inc.">Walmart Inc. (WMT)</option>
+                            <option value="0000885639" data-company="NVIDIA Corporation">NVIDIA Corporation (NVDA)</option>
                         </select>
                         <div class="form-text">
-                            <i class="fas fa-bolt text-warning me-1"></i> Direct access to the latest 10-K filing for popular companies - no search required.
+                            <i class="fas fa-bolt text-warning me-1"></i> Direct access to the latest 10-K filing for the "Magnificent 7" tech companies - no search required.
+                            <div class="alert alert-info mt-2 p-2 small">
+                                <strong>What are the Magnificent 7?</strong> The "Magnificent Seven" refers to the seven largest technology companies by market capitalization: Apple, Microsoft, Amazon, Alphabet (Google), Meta (Facebook), Tesla, and NVIDIA. These companies have a significant influence on market indices due to their size and growth.
+                            </div>
                         </div>
                         
                         <!-- Hidden field to store the selected company name -->

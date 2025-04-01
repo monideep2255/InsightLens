@@ -99,7 +99,7 @@ def upload_document():
             db.session.commit()
             
         elif upload_type == 'quick_edgar':
-            # Handle quick access to SEC EDGAR for popular companies
+            # Handle quick access to SEC EDGAR for the Magnificent 7 companies
             cik = request.form.get('cik')
             if not cik:
                 flash('Please select a company', 'danger')
@@ -108,21 +108,39 @@ def upload_document():
             # Get company name
             company_name = request.form.get('company_name', '').strip()
             
-            # Create direct EDGAR URL
-            base_url = f"https://www.sec.gov/Archives/edgar/data/{cik}"
+            # Map of company names for the Magnificent 7
+            magnificent_7 = {
+                '0000320193': 'Apple Inc.',
+                '0000789019': 'Microsoft Corporation',
+                '0001018724': 'Amazon.com, Inc.',
+                '0001652044': 'Alphabet Inc. (Google)',
+                '0001326801': 'Meta Platforms, Inc. (Facebook)',
+                '0001318605': 'Tesla, Inc.',
+                '0000885639': 'NVIDIA Corporation'
+            }
             
-            # Create new document in database
-            document = Document(
-                url=base_url,
-                content_type='edgar',
-                use_demo_mode=use_demo_mode,
-                use_local_processing=use_local_processing,
-                company_name=company_name,
-                title=f"{company_name} - SEC EDGAR" if company_name else f"SEC EDGAR Document ({cik})",
-                cik=cik
-            )
-            db.session.add(document)
-            db.session.commit()
+            # Use the name from our map if available
+            if not company_name and cik in magnificent_7:
+                company_name = magnificent_7[cik]
+            
+            # For demo mode, we'll skip the actual SEC fetch
+            if use_demo_mode:
+                document = Document(
+                    url=f"https://www.sec.gov/dummy/edgar/data/{cik}",
+                    content_type='edgar',
+                    use_demo_mode=True,
+                    use_local_processing=use_local_processing,
+                    company_name=company_name,
+                    title=f"{company_name} - SEC EDGAR (Demo)" if company_name else f"SEC EDGAR Document ({cik}) - Demo",
+                    cik=cik
+                )
+                db.session.add(document)
+                db.session.commit()
+            else:
+                # For real processing, redirect to the edgar route which has better handling
+                return redirect(url_for('edgar.process_10k', 
+                                        cik=cik, 
+                                        company_name=company_name))
         else:
             flash('Invalid upload type', 'danger')
             return redirect(request.url)

@@ -41,16 +41,36 @@ def process_10k(cik):
     Process the latest 10-K filing for a company
     """
     try:
+        # Get company name if provided
+        company_name = request.args.get('company_name', '')
+        
         # Get the latest 10-K URL
         filing_url = get_latest_10k(cik)
         if not filing_url:
-            return render_template('edgar_search.html', error='Could not find 10-K filing for this company')
+            return render_template('edgar_search.html', error='Could not find 10-K filing for this company. The SEC may have changed their filing format.')
         
-        # Create a new document
+        # Map of CIK to company names for the Magnificent 7
+        magnificent_7 = {
+            '0000320193': 'Apple Inc.',
+            '0000789019': 'Microsoft Corporation',
+            '0001018724': 'Amazon.com, Inc.',
+            '0001652044': 'Alphabet Inc. (Google)',
+            '0001326801': 'Meta Platforms, Inc. (Facebook)',
+            '0001318605': 'Tesla, Inc.',
+            '0000885639': 'NVIDIA Corporation'
+        }
+        
+        # If no company name provided but it's one of the Magnificent 7, use that name
+        if not company_name and cik in magnificent_7:
+            company_name = magnificent_7[cik]
+            
+        # Create a new document with better metadata
         document = Document(
             url=filing_url,
-            content_type='url',
-            title=f"10-K Filing (CIK: {cik})"
+            content_type='edgar',  # Use 'edgar' type instead of 'url' for better handling
+            title=f"10-K Filing: {company_name or 'Unknown Company'}",
+            company_name=company_name,
+            cik=cik
         )
         db.session.add(document)
         db.session.commit()
@@ -65,14 +85,28 @@ def process_10k(cik):
         
         def process_with_app_context(doc_id):
             with app.app_context():
-                process_document(doc_id)
+                success = process_document(doc_id)
+                
+                # If processing fails, log additional details
+                if not success:
+                    proc = Processing.query.filter_by(document_id=doc_id).first()
+                    logger.error(f"Processing failed for document {doc_id}, error: {proc.error if proc else 'Unknown error'}")
                 
         thread = threading.Thread(target=process_with_app_context, args=(document.id,))
         thread.daemon = True
         thread.start()
         
+        logger.info(f"Started processing 10-K for {company_name or cik} (Document ID: {document.id})")
         return redirect(url_for('insight_routes.show_insights', document_id=document.id))
         
     except Exception as e:
         logger.error(f"Error processing 10-K for CIK {cik}: {str(e)}")
-        return render_template('edgar_search.html', error=f"Error processing 10-K: {str(e)}")
+        error_message = str(e)
+        
+        # Provide more user-friendly error messages
+        if "Could not find 10-K filing" in error_message:
+            error_message = "Could not find a recent 10-K filing for this company. Please try another company or use the SEC search feature."
+        elif "Connection" in error_message or "Timeout" in error_message:
+            error_message = "Connection to the SEC database timed out. This could be due to high traffic. Please try again later."
+        
+        return render_template('edgar_search.html', error=f"Error processing 10-K: {error_message}")

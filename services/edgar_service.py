@@ -150,25 +150,108 @@ def extract_10k_content(url):
     }
     
     try:
+        # First approach: Try direct extraction
         response = requests.get(url, headers=headers)
         response.raise_for_status()
         
         soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Check if we have an iXBRL document
+        if 'ix?doc=' in url:
+            logger.info(f"Detected iXBRL document, using specialized extraction for: {url}")
+            
+            # Try to get the main content element
+            main_content = soup.find('div', {'class': 'filing-content'})
+            if main_content:
+                # Extract text from the main content element
+                text = main_content.get_text(separator='\n', strip=True)
+                if text and len(text) > 500:
+                    return text
+                    
+            # If main content element not found or insufficient text, try the document body
+            body = soup.find('body')
+            if body:
+                text = body.get_text(separator='\n', strip=True)
+                if text and len(text) > 500:
+                    return text
+            
+            # Second approach: Try to get the raw text version of the filing
+            try:
+                # Extract document details from URL
+                if '/Archives/edgar/data/' in url:
+                    parts = url.split('/ix?doc=/Archives/edgar/data/')[1].split('/')
+                    if len(parts) >= 2:
+                        cik = parts[0]
+                        # Get the accession number
+                        if len(parts) >= 3:
+                            # Modern SEC URLs include the filename
+                            accession_parts = parts[1].split('-')
+                            accession = f"{accession_parts[0]}-{accession_parts[1]}-{accession_parts[2]}"
+                            
+                            # Try to request the text version
+                            txt_url = f"https://www.sec.gov/Archives/edgar/data/{cik}/{parts[1]}/{accession}.txt"
+                            logger.info(f"Attempting to retrieve text version: {txt_url}")
+                            
+                            txt_response = requests.get(txt_url, headers=headers)
+                            txt_response.raise_for_status()
+                            
+                            if len(txt_response.text) > 1000:  # Ensure we got meaningful content
+                                logger.info("Successfully retrieved text version of 10-K")
+                                return txt_response.text
+            except Exception as txt_err:
+                logger.warning(f"Failed to get text version: {str(txt_err)}")
+                
+            # Third approach: Try alternative URL construction for modern SEC URLs
+            try:
+                # Sometimes we can access the HTM version directly
+                if '/ix?doc=' in url:
+                    htm_url = url.replace('/ix?doc=', '/')
+                    logger.info(f"Attempting to retrieve HTM version: {htm_url}")
+                    
+                    htm_response = requests.get(htm_url, headers=headers)
+                    htm_response.raise_for_status()
+                    
+                    htm_soup = BeautifulSoup(htm_response.text, 'html.parser')
+                    htm_text = htm_soup.get_text(separator='\n', strip=True)
+                    
+                    if htm_text and len(htm_text) > 500:
+                        logger.info("Successfully retrieved HTM version of 10-K")
+                        return htm_text
+            except Exception as htm_err:
+                logger.warning(f"Failed to get HTM version: {str(htm_err)}")
         
         # Remove script and style elements
         for script in soup(["script", "style"]):
             script.extract()
         
         # Get text
-        text = soup.get_text()
+        text = soup.get_text(separator='\n', strip=True)
         
         # Clean up text
         lines = (line.strip() for line in text.splitlines())
         chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
         text = '\n'.join(chunk for chunk in chunks if chunk)
         
-        return text
+        # Check if we have enough content
+        if text and len(text) > 500:
+            return text
+        else:
+            # Fallback to a more aggressive extraction approach
+            logger.warning("Initial extraction produced insufficient content, trying fallback method")
+            # Get all text nodes from the document
+            text_nodes = []
+            for node in soup.find_all(text=True):
+                if node.parent.name not in ['script', 'style', 'meta', 'link']:
+                    text_nodes.append(node.strip())
+            
+            # Filter out empty lines and join
+            filtered_text = '\n'.join(node for node in text_nodes if node)
+            
+            if filtered_text and len(filtered_text) > 500:
+                return filtered_text
+            else:
+                raise ValueError("Could not extract sufficient content from the 10-K filing")
         
     except Exception as e:
         logger.error(f"Error extracting content from 10-K at {url}: {str(e)}")
-        return None
+        raise ValueError(f"Failed to extract content from 10-K: {str(e)}")
