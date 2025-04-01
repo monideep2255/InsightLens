@@ -323,3 +323,34 @@ If you prefer using Docker:
    ```bash
    docker-compose up
    ```
+
+## TO-DO Items
+
+### Critical
+
+- [ ] **OpenAI API Authentication Issues**
+  - Fix issue with OpenAI API key not being properly refreshed from environment variables
+  - Current error: "Incorrect API key provided: sk-proj-*" despite updating environment variables
+  - Potential solution: Check if key needs to be in a different format (OpenAI Project API vs Organization API)
+
+- [ ] **SEC EDGAR Search Functionality**
+  - Fix company search functionality in SEC EDGAR integration
+  - Ensure proper retrieval and processing of 10-K filings
+  - Add better error handling for SEC API rate limiting
+
+### Important
+
+- [ ] **Performance Optimization**
+  - Improve PDF processing speed for large documents
+  - Add caching for API responses to reduce costs
+
+- [ ] **Enhanced Error Handling**
+  - Provide more user-friendly error messages
+  - Implement graceful degradation when API services are unavailable
+
+### Nice to Have
+
+- [ ] **User Interface Improvements**
+  - Add progress indicators for document processing
+  - Implement document history view
+  - Add filtering options for insights
