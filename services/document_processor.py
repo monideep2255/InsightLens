@@ -5,10 +5,18 @@ from werkzeug.utils import secure_filename
 from flask import current_app
 
 from app import db, app
-from models import Document, Insight, Processing
+from models import Document, Insight, Processing, ApiUsage
 from services.pdf_parser import extract_pdf_content
 from services.url_parser import extract_url_content
 from services.ai_service import generate_insights
+# Import the demo service
+from services.demo_service import generate_demo_insights, perform_local_analysis
+# Import the edgar service if it exists
+try:
+    from services.edgar_service import extract_10k_content
+    EDGAR_SERVICE_AVAILABLE = True
+except ImportError:
+    EDGAR_SERVICE_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -30,24 +38,96 @@ def process_document(document_id):
     db.session.commit()
     
     try:
-        # Extract content based on document type
-        if document.content_type == 'pdf':
-            upload_folder = current_app.config['UPLOAD_FOLDER']
-            file_path = os.path.join(upload_folder, document.filename)
-            if not os.path.exists(file_path):
-                raise FileNotFoundError(f"PDF file not found: {file_path}")
+        # Check if we should use demo mode
+        if document.use_demo_mode:
+            # Use appropriate demo template based on content type or company name
+            company_type = "tech"  # Default
             
-            content = extract_pdf_content(file_path)
-        elif document.content_type == 'url':
-            content = extract_url_content(document.url)
+            # Try to guess company type from title or filename
+            doc_text = (document.title or "") + " " + (document.filename or "") + " " + (document.company_name or "")
+            doc_text = doc_text.lower()
+            
+            if any(term in doc_text for term in ["bank", "financial", "insurance", "invest", "capital"]):
+                company_type = "financial"
+            elif any(term in doc_text for term in ["retail", "store", "shop", "consumer"]):
+                company_type = "retail"
+            elif any(term in doc_text for term in ["manufacturing", "industrial", "factory"]):
+                company_type = "manufacturing"
+            
+            logger.info(f"Using demo mode with {company_type} template for document {document_id}")
+            
+            # Get demo insights
+            insights = generate_demo_insights(document_id, company_type)
+            
+            # Add a note that this is demo mode
+            for category in insights:
+                insights[category] = f"<div class='alert alert-info'>DEMO MODE: This is sample data for demonstration purposes.</div>{insights[category]}"
+                
         else:
-            raise ValueError(f"Unsupported content type: {document.content_type}")
-        
-        if not content or len(content.strip()) < 100:
-            raise ValueError("Could not extract sufficient content from the document")
-        
-        # Generate insights using AI
-        insights = generate_insights(content)
+            # Regular processing mode - extract content based on document type
+            if document.content_type == 'pdf':
+                upload_folder = current_app.config['UPLOAD_FOLDER']
+                file_path = os.path.join(upload_folder, document.filename)
+                if not os.path.exists(file_path):
+                    raise FileNotFoundError(f"PDF file not found: {file_path}")
+                
+                content = extract_pdf_content(file_path)
+            elif document.content_type == 'url':
+                content = extract_url_content(document.url)
+            elif document.content_type == 'edgar' and EDGAR_SERVICE_AVAILABLE:
+                # If we have a CIK, use that to get the 10-K directly
+                if document.cik:
+                    from services.edgar_service import get_latest_10k
+                    filing_url = get_latest_10k(document.cik)
+                    if not filing_url:
+                        raise ValueError(f"Could not find 10-K filing for CIK: {document.cik}")
+                    content = extract_10k_content(filing_url)
+                else:
+                    # Otherwise use the URL we were given
+                    content = extract_10k_content(document.url)
+            else:
+                raise ValueError(f"Unsupported content type: {document.content_type}")
+            
+            if not content or len(content.strip()) < 100:
+                raise ValueError("Could not extract sufficient content from the document")
+            
+            # Generate insights using either AI or local processing
+            if document.use_local_processing:
+                logger.info(f"Using local processing for document {document_id}")
+                insights = perform_local_analysis(content)
+                
+                # Add a note that this is local processing mode
+                for category in insights:
+                    insights[category] = f"<div class='alert alert-info'>LOCAL PROCESSING: This analysis was performed locally without AI.</div>{insights[category]}"
+            else:
+                # Generate insights using AI and track usage
+                insights = generate_insights(content)
+                
+                # Monitor token usage - this would normally be provided by the API response
+                # Since we don't have direct access to token counts, we'll estimate based on content length
+                try:
+                    # Rough estimate: 1 token ≈ 4 characters
+                    estimated_prompt_tokens = len(content) // 4
+                    estimated_completion_tokens = sum(len(insight) for insight in insights.values()) // 4
+                    
+                    # Calculate estimated cost
+                    estimated_cost = ApiUsage.calculate_openai_cost(
+                        estimated_prompt_tokens, 
+                        estimated_completion_tokens
+                    )
+                    
+                    # Record API usage
+                    api_usage = ApiUsage(
+                        api_name="openai",  # Default to OpenAI, could be changed based on config
+                        document_id=document.id,
+                        prompt_tokens=estimated_prompt_tokens,
+                        completion_tokens=estimated_completion_tokens,
+                        estimated_cost_usd=estimated_cost
+                    )
+                    db.session.add(api_usage)
+                    logger.info(f"Recorded API usage: {estimated_prompt_tokens} prompt tokens, {estimated_completion_tokens} completion tokens, ${estimated_cost:.4f} est. cost")
+                except Exception as usage_error:
+                    logger.error(f"Error recording API usage: {str(usage_error)}")
         
         # Save insights to database
         for category, insight_content in insights.items():

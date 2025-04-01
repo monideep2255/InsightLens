@@ -7,9 +7,13 @@ class Document(db.Model):
     filename = db.Column(db.String(255), nullable=True)
     url = db.Column(db.String(512), nullable=True)
     title = db.Column(db.String(255), nullable=True)
-    content_type = db.Column(db.String(64), nullable=False)  # 'pdf' or 'url'
+    content_type = db.Column(db.String(64), nullable=False)  # 'pdf', 'url', 'edgar', or 'demo'
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     processed = db.Column(db.Boolean, default=False)
+    use_demo_mode = db.Column(db.Boolean, default=False)  # For demo mode processing without API calls
+    use_local_processing = db.Column(db.Boolean, default=False)  # For local rule-based processing
+    company_name = db.Column(db.String(255), nullable=True)  # For storing company name
+    cik = db.Column(db.String(20), nullable=True)  # For SEC Edgar CIK
     insights = db.relationship('Insight', backref='document', lazy=True, cascade="all, delete-orphan")
     
     def __repr__(self):
@@ -47,3 +51,38 @@ class Processing(db.Model):
     
     def __repr__(self):
         return f'<Processing {self.id} for Document {self.document_id} ({self.status})>'
+
+
+class ApiUsage(db.Model):
+    """Tracks API usage for cost management"""
+    id = db.Column(db.Integer, primary_key=True)
+    api_name = db.Column(db.String(64), nullable=False)  # 'openai', 'huggingface', 'deepseek'
+    document_id = db.Column(db.Integer, db.ForeignKey('document.id'), nullable=True)
+    prompt_tokens = db.Column(db.Integer, default=0)
+    completion_tokens = db.Column(db.Integer, default=0)
+    estimated_cost_usd = db.Column(db.Float, default=0.0)
+    timestamp = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<ApiUsage {self.api_name} - Doc {self.document_id} - Cost ${self.estimated_cost_usd:.4f}>'
+    
+    @staticmethod
+    def calculate_openai_cost(prompt_tokens, completion_tokens, model="gpt-4o"):
+        """Calculate the estimated cost for OpenAI API usage"""
+        # Current pricing for gpt-4o (as of April 2025)
+        costs = {
+            "gpt-4o": {"prompt": 0.01, "completion": 0.03},  # per 1K tokens
+            "gpt-3.5-turbo": {"prompt": 0.0015, "completion": 0.002}  # per 1K tokens
+        }
+        
+        model_costs = costs.get(model, costs["gpt-4o"])
+        prompt_cost = (prompt_tokens / 1000) * model_costs["prompt"]
+        completion_cost = (completion_tokens / 1000) * model_costs["completion"]
+        
+        return prompt_cost + completion_cost
+    
+    @staticmethod
+    def get_monthly_usage():
+        """Get the total API usage for the current month"""
+        start_of_month = datetime.datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        return ApiUsage.query.filter(ApiUsage.timestamp >= start_of_month).all()

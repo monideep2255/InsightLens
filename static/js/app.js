@@ -89,9 +89,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const urlOption = document.getElementById('url-option');
     const fileOption = document.getElementById('file-option');
     const secOption = document.getElementById('sec-option');
+    const quickEdgarOption = document.getElementById('quick-edgar-option');
     const urlContainer = document.getElementById('url-container');
     const fileContainer = document.getElementById('file-container');
     const secContainer = document.getElementById('sec-container');
+    const quickEdgarContainer = document.getElementById('quick-edgar-container');
     const secInfo = document.getElementById('sec-info');
     
     // Show SEC EDGAR option by default
@@ -99,7 +101,23 @@ document.addEventListener('DOMContentLoaded', function() {
         secContainer.classList.remove('d-none');
         secInfo.classList.remove('d-none');
         fileContainer.classList.add('d-none');
+        urlContainer.classList.add('d-none');
+        if (quickEdgarContainer) quickEdgarContainer.classList.add('d-none');
         uploadButton.innerHTML = '<i class="fas fa-search-dollar me-2"></i>Search SEC EDGAR';
+    }
+    
+    // Quick company selection handling
+    const companySelect = document.getElementById('company-select');
+    const quickCompanyName = document.getElementById('quick-company-name');
+    
+    if (companySelect) {
+        companySelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption && selectedOption.dataset.company) {
+                // Set the hidden company name field
+                quickCompanyName.value = selectedOption.dataset.company;
+            }
+        });
     }
     
     // Check if elements exist before adding event listeners
@@ -171,6 +189,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (isValid) {
                     uploadForm.action = `/edgar/search?query=${encodeURIComponent(companyName.value)}`;
                 }
+            } else if (selectedOption === 'quick_edgar') {
+                const companySelect = document.getElementById('company-select');
+                if (!companySelect.value) {
+                    isValid = false;
+                    errorMessage = 'Please select a company from the list';
+                }
             }
             
             if (!isValid) {
@@ -198,9 +222,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Toggle between URL, File, and SEC EDGAR options
+    // Toggle between URL, File, SEC EDGAR, and Quick 10-K options
     
-    if (urlOption && fileOption && secOption) {
+    if (urlOption && fileOption && secOption && quickEdgarOption) {
         urlOption.addEventListener('change', function() {
             if (this.checked) {
                 urlContainer.classList.remove('d-none');
@@ -246,6 +270,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 secInfo.classList.remove('d-none');
                 fileContainer.classList.add('d-none');
                 urlContainer.classList.add('d-none');
+                if (quickEdgarContainer) quickEdgarContainer.classList.add('d-none');
                 
                 // Clear other inputs
                 if (fileInput) fileInput.value = '';
@@ -256,6 +281,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Update button text
                 uploadButton.innerHTML = '<i class="fas fa-search-dollar me-2"></i>Search SEC EDGAR';
+            }
+        });
+        
+        // Quick Edgar option handler
+        quickEdgarOption.addEventListener('change', function() {
+            if (this.checked) {
+                quickEdgarContainer.classList.remove('d-none');
+                secContainer.classList.add('d-none');
+                secInfo.classList.add('d-none');
+                fileContainer.classList.add('d-none');
+                urlContainer.classList.add('d-none');
+                
+                // Clear other inputs
+                if (fileInput) fileInput.value = '';
+                if (urlInput) urlInput.value = '';
+                if (document.getElementById('file-display')) {
+                    document.getElementById('file-display').classList.add('d-none');
+                }
+                if (document.getElementById('company-name')) {
+                    document.getElementById('company-name').value = '';
+                }
+                
+                // Update button text
+                uploadButton.innerHTML = '<i class="fas fa-file-contract me-2"></i>Get Latest 10-K';
             }
         });
     }

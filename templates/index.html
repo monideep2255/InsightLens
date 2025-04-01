@@ -28,12 +28,36 @@
                             <label class="form-check-label" for="sec-option" data-bs-toggle="tooltip" title="Search and analyze official financial reports from the SEC EDGAR database for any publicly-traded company">SEC EDGAR Search</label>
                         </div>
                         <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="upload_type" id="quick-edgar-option" value="quick_edgar">
+                            <label class="form-check-label" for="quick-edgar-option" data-bs-toggle="tooltip" title="Directly access latest 10-K filings for popular companies">Quick 10-K Access</label>
+                        </div>
+                        <div class="form-check form-check-inline">
                             <input class="form-check-input" type="radio" name="upload_type" id="url-option" value="url">
                             <label class="form-check-label" for="url-option" data-bs-toggle="tooltip" title="Analyze content from a company website, investor relations page, or online financial report (most websites supported)">Enter URL</label>
                         </div>
                         <div class="form-check form-check-inline">
                             <input class="form-check-input" type="radio" name="upload_type" id="file-option" value="file">
                             <label class="form-check-label" for="file-option" data-bs-toggle="tooltip" title="Upload a PDF file containing company information, annual reports, or investor presentations">Upload PDF</label>
+                        </div>
+                    </div>
+                    
+                    <!-- Processing Options -->
+                    <div class="mb-4 border-top pt-3">
+                        <h6 class="mb-2">Processing Options</h6>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="use_demo_mode" id="demo-mode">
+                            <label class="form-check-label" for="demo-mode">
+                                <span class="badge bg-success me-1">Recommended</span>
+                                Use Demo Mode
+                            </label>
+                            <small class="d-block text-muted">Generate analysis without calling external APIs (faster, no API costs)</small>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="use_local_processing" id="local-processing">
+                            <label class="form-check-label" for="local-processing">
+                                Use Local Processing
+                            </label>
+                            <small class="d-block text-muted">Process documents locally without AI (limited analysis but completely free)</small>
                         </div>
                     </div>
                     
@@ -89,6 +113,30 @@
                                 <strong>What is a 10-K?</strong> A 10-K is an annual financial report required by the SEC for all publicly-traded companies. It provides a comprehensive overview of the company's business, finances, risks, and management discussion.
                             </div>
                         </div>
+                    </div>
+                    
+                    <!-- Quick 10-K Access Section -->
+                    <div id="quick-edgar-container" class="mb-3 d-none">
+                        <label for="company-select" class="form-label">Select a Company for Quick 10-K Access</label>
+                        <select class="form-select" id="company-select" name="cik">
+                            <option value="" selected disabled>-- Select a company --</option>
+                            <option value="0000320193" data-company="Apple Inc.">Apple Inc. (AAPL)</option>
+                            <option value="0000789019" data-company="Microsoft Corporation">Microsoft Corporation (MSFT)</option>
+                            <option value="0001018724" data-company="Amazon.com, Inc.">Amazon.com, Inc. (AMZN)</option>
+                            <option value="0001652044" data-company="Alphabet Inc.">Alphabet Inc. (Google) (GOOGL)</option>
+                            <option value="0001326801" data-company="Meta Platforms, Inc.">Meta Platforms, Inc. (Facebook) (META)</option>
+                            <option value="0001318605" data-company="Tesla, Inc.">Tesla, Inc. (TSLA)</option>
+                            <option value="0001067983" data-company="Berkshire Hathaway Inc.">Berkshire Hathaway Inc. (BRK.A)</option>
+                            <option value="0000019617" data-company="JPMorgan Chase & Co.">JPMorgan Chase & Co. (JPM)</option>
+                            <option value="0000200406" data-company="Johnson & Johnson">Johnson & Johnson (JNJ)</option>
+                            <option value="0000104169" data-company="Walmart Inc.">Walmart Inc. (WMT)</option>
+                        </select>
+                        <div class="form-text">
+                            <i class="fas fa-bolt text-warning me-1"></i> Direct access to the latest 10-K filing for popular companies - no search required.
+                        </div>
+                        
+                        <!-- Hidden field to store the selected company name -->
+                        <input type="hidden" id="quick-company-name" name="company_name" value="">
                     </div>
 
                     <div class="alert alert-warning d-none" id="upload-status" role="alert"></div>
