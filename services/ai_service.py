@@ -16,12 +16,19 @@ logger = logging.getLogger(__name__)
 AI_MODEL_TYPE = os.environ.get("AI_MODEL_TYPE", "openai").lower()  # Default to OpenAI if not specified
 HUGGINGFACE_MODEL = os.environ.get("HUGGINGFACE_MODEL", "mistral")  # Default Hugging Face model
 
-# Initialize OpenAI client if available and selected
+# Initialize OpenAI client functions
+def get_openai_client():
+    """Get an OpenAI client with the latest API key from environment variables"""
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        logger.warning("OPENAI_API_KEY not found in environment variables")
+        return None
+    return OpenAI(api_key=api_key)
+
+# Initialize a global variable for reference, but we'll refresh before each use
 if AI_MODEL_TYPE == "openai" and OPENAI_AVAILABLE:
     OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
-    if OPENAI_API_KEY:
-        openai = OpenAI(api_key=OPENAI_API_KEY)
-    else:
+    if not OPENAI_API_KEY:
         logger.warning("OPENAI_API_KEY not found in environment variables")
 
 # Initialize Hugging Face setup if selected
@@ -159,7 +166,9 @@ def generate_insights_with_openai(content):
     """
     Generate insights using OpenAI's API
     """
-    if not OPENAI_API_KEY:
+    # Check for API key on each call, not relying on global variable
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
         return {category: "<p>OpenAI API key not configured.</p>" for category in PROMPT_TEMPLATES.keys()}
     
     insights = {}
@@ -189,7 +198,11 @@ def generate_insights_with_openai(content):
             # Generate a summary first
             # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
             # do not change this unless explicitly requested by the user
-            summary_response = openai.chat.completions.create(
+            client = get_openai_client()
+            if not client:
+                raise Exception("OpenAI API key not configured or invalid")
+                
+            summary_response = client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
                     {"role": "system", "content": "You are a business analyst who extracts key facts from documents."},
@@ -229,7 +242,11 @@ def generate_insights_with_openai(content):
                 # Make OpenAI API call
                 # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
                 # do not change this unless explicitly requested by the user
-                response = openai.chat.completions.create(
+                client = get_openai_client()
+                if not client:
+                    raise Exception("OpenAI API key not configured or invalid")
+                    
+                response = client.chat.completions.create(
                     model="gpt-4o",
                     messages=[
                         {"role": "system", "content": "You are an AI assistant that helps analyze company documents using value investing principles. Your answers should be concise and factual."},
@@ -260,7 +277,11 @@ def generate_insights_with_openai(content):
                 
                 # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
                 # do not change this unless explicitly requested by the user
-                response = openai.chat.completions.create(
+                client = get_openai_client()
+                if not client:
+                    raise Exception("OpenAI API key not configured or invalid")
+                    
+                response = client.chat.completions.create(
                     model="gpt-4o",
                     messages=[
                         {"role": "system", "content": "You are an AI assistant that helps analyze company documents using value investing principles."},
