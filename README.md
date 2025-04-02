@@ -171,7 +171,7 @@ This tool is designed as a research assistant, not a financial advisor. Always p
 
 ## Deployment Options
 
-### Deploying on Replit (Recommended)
+### Primary Deployment: Replit (Recommended)
 
 1. **Using Replit's Autoscale Deployment**
    - Click the "Deploy" button in your Repl
@@ -179,7 +179,7 @@ This tool is designed as a research assistant, not a financial advisor. Always p
    - Configure deployment:
      - Machine: 1vCPU, 2 GiB RAM (default)
      - Max machines: 3 (default)
-     - Run command: `python main.py`
+     - Run command: `gunicorn --bind 0.0.0.0:5000 main:app`
    - Click "Deploy" to publish your application
 
 2. **Using Replit's Reserved VM**
@@ -197,4 +197,41 @@ Key Benefits of Replit Deployment:
 - Easy scaling capabilities
 - Zero-configuration PostgreSQL database
 
-For more deployment options and advanced configurations, refer to Replit's deployment documentation.
+### Alternative Deployment Options
+
+1. **Traditional Server Deployment**
+   ```bash
+   # Install dependencies
+   pip install -r sample_requirements.txt
+   
+   # Set up environment variables
+   export FLASK_SECRET_KEY=your_secret_key
+   export DATABASE_URL=postgresql://username:password@localhost:5432/insightlens
+   
+   # Initialize database
+   python recreate_db.py
+   
+   # Run with Gunicorn
+   gunicorn --bind 0.0.0.0:5000 --workers 4 main:app
+   ```
+
+2. **Docker Deployment**
+   ```bash
+   # Build the Docker image
+   docker compose -f docker-compose.sample.yml build
+   
+   # Start the services
+   docker compose -f docker-compose.sample.yml up -d
+   ```
+
+   The application will be available at http://localhost:5000
+
+3. **Production Considerations**
+   - Use a production-grade database
+   - Configure proper logging
+   - Set up monitoring
+   - Implement backup strategies
+   - Use HTTPS in production
+   - Consider using a reverse proxy (nginx/Apache)
+
+For most users, we recommend using Replit's deployment options for the best development experience and easiest maintenance.
