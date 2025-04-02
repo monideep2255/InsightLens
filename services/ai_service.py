@@ -24,16 +24,45 @@ def get_openai_client():
         logger.warning("OPENAI_API_KEY not found in environment variables")
         return None
     
-    logger.debug(f"Initializing OpenAI client with API key starting with {api_key[:8]}...")
+    # Log API key format for debugging (securely)
+    key_prefix = api_key[:8] if len(api_key) > 8 else "too_short"
+    logger.debug(f"Initializing OpenAI client with API key starting with {key_prefix}...")
+    
+    # Create client configuration
+    client_args = {"api_key": api_key}
     
     # Configuration for organization ID if present
     organization = os.environ.get("OPENAI_ORGANIZATION")
     if organization:
         logger.debug(f"Using organization ID: {organization}")
-        return OpenAI(api_key=api_key, organization=organization)
+        client_args["organization"] = organization
     
-    # No organization ID, use standard client
-    return OpenAI(api_key=api_key)
+    # Configuration for project-based API keys
+    if api_key.startswith("sk-proj-"):
+        logger.info("Using project-based API key with sk-proj- prefix")
+        
+        # Add project-based specific configuration if needed
+        # OpenAI client automatically handles project-based keys with recent versions
+        
+        # Additional debug info for determining where the issue might be
+        version_info = {}
+        try:
+            import openai
+            version_info["openai_version"] = getattr(openai, "__version__", "unknown")
+        except (ImportError, AttributeError):
+            version_info["openai_version"] = "import_failed"
+        
+        logger.debug(f"OpenAI SDK version info: {version_info}")
+    
+    # Create and return the client
+    try:
+        client = OpenAI(**client_args)
+        # Test that the client was created successfully
+        logger.debug("OpenAI client created successfully")
+        return client
+    except Exception as e:
+        logger.error(f"Error creating OpenAI client: {str(e)}")
+        return None
 
 # Initialize a global variable for reference, but we'll refresh before each use
 if AI_MODEL_TYPE == "openai" and OPENAI_AVAILABLE:
