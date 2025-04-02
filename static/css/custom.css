@@ -240,6 +240,17 @@ body {
   background-color: var(--bs-gray-400) !important;
 }
 
+/* Research method cards styling */
+[data-bs-theme="dark"] .research-method-card {
+  background-color: var(--bs-dark);
+  color: var(--bs-light);
+}
+
+[data-bs-theme="light"] .research-method-card {
+  background-color: var(--bs-gray-200);
+  color: var(--bs-dark);
+}
+
 /* Main heading style for light mode */
 [data-bs-theme="light"] h1, 
 [data-bs-theme="light"] h2, 
