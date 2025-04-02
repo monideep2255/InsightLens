@@ -64,10 +64,9 @@ def process_10k(cik):
         if not company_name and cik in magnificent_7:
             company_name = magnificent_7[cik]
             
-        # Always enable demo mode by default to avoid API issues
-        # User can still disable it explicitly by passing demo_mode=false in the URL
-        use_demo_mode = request.args.get('demo_mode', 'true').lower() != 'false'
-        use_local_processing = request.args.get('local_processing', 'false').lower() == 'true'
+        # Check if we should use demo mode (from URL parameter)
+        use_demo_mode = request.args.get('demo_mode') == 'true' or request.args.get('demo') == 'true'
+        use_local_processing = request.args.get('local_processing') == 'true'
         
         # Create a new document with better metadata
         document = Document(

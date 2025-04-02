@@ -5,6 +5,7 @@ import requests
 
 # Optional import of OpenAI
 try:
+    import openai
     from openai import OpenAI
     OPENAI_AVAILABLE = True
 except ImportError:
@@ -28,36 +29,22 @@ def get_openai_client():
     key_prefix = api_key[:8] if len(api_key) > 8 else "too_short"
     logger.debug(f"Initializing OpenAI client with API key starting with {key_prefix}...")
     
-    # Create client configuration
-    client_args = {"api_key": api_key}
+    # Directly set the API key in the openai module
+    openai.api_key = api_key
     
     # Configuration for organization ID if present
     organization = os.environ.get("OPENAI_ORGANIZATION")
     if organization:
         logger.debug(f"Using organization ID: {organization}")
-        client_args["organization"] = organization
+        openai.organization = organization
     
-    # Configuration for project-based API keys
-    if api_key.startswith("sk-proj-"):
-        logger.info("Using project-based API key with sk-proj- prefix")
-        
-        # Add project-based specific configuration if needed
-        # OpenAI client automatically handles project-based keys with recent versions
-        
-        # Additional debug info for determining where the issue might be
-        version_info = {}
-        try:
-            import openai
-            version_info["openai_version"] = getattr(openai, "__version__", "unknown")
-        except (ImportError, AttributeError):
-            version_info["openai_version"] = "import_failed"
-        
-        logger.debug(f"OpenAI SDK version info: {version_info}")
+    # Log version info
+    version_info = getattr(openai, "__version__", "unknown")
+    logger.debug(f"OpenAI SDK version: {version_info}")
     
-    # Create and return the client
+    # Create and return the client using module-level configuration
     try:
-        client = OpenAI(**client_args)
-        # Test that the client was created successfully
+        client = OpenAI(api_key=api_key)
         logger.debug("OpenAI client created successfully")
         return client
     except Exception as e:
