@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, jsonify, current_app
 import logging
 import threading
+import requests
 from models import Document, Processing
 from app import db
 from services.edgar_service import search_company, get_latest_10k, extract_10k_content
@@ -68,11 +69,59 @@ def process_10k(cik):
         use_demo_mode = request.args.get('demo_mode') == 'true' or request.args.get('demo') == 'true'
         use_local_processing = request.args.get('local_processing') == 'true'
         
+        # If company_name is not provided, try to get it from the SEC API
+        if not company_name:
+            # Try to get company name from the magnificent_7 map
+            if cik in magnificent_7:
+                company_name = magnificent_7[cik]
+            else:
+                # Try to extract company name from filing URL or response
+                try:
+                    response = requests.get(filing_url, headers={'User-Agent': 'InsightLens Research Tool (contactus@example.com)'})
+                    if response.status_code == 200:
+                        from bs4 import BeautifulSoup
+                        soup = BeautifulSoup(response.text, 'html.parser')
+                        # Try to find company name in title
+                        title_tag = soup.find('title')
+                        if title_tag and not 'EDGAR' in title_tag.text:
+                            # Extract company name from title
+                            title_text = title_tag.text.strip()
+                            if ':' in title_text:
+                                # Format: "Company Name: 10-K Filing"
+                                company_name = title_text.split(':')[0].strip()
+                            elif '-' in title_text:
+                                # Format: "10-K - Company Name"
+                                company_name = title_text.split('-')[1].strip()
+                            else:
+                                # Just use the title
+                                company_name = title_text
+                except Exception as e:
+                    logger.warning(f"Failed to extract company name from filing URL: {str(e)}")
+            
+            # If we still don't have a company name, try getting it from the SEC API
+            if not company_name:
+                try:
+                    # Format CIK with leading zeros for API request
+                    cik_padded = cik.zfill(10)
+                    headers = {'User-Agent': 'InsightLens Research Tool (contactus@example.com)'}
+                    api_url = f"https://data.sec.gov/submissions/CIK{cik_padded}.json"
+                    response = requests.get(api_url, headers=headers)
+                    if response.status_code == 200:
+                        data = response.json()
+                        if 'name' in data:
+                            company_name = data['name']
+                except Exception as e:
+                    logger.warning(f"Failed to get company name from SEC API: {str(e)}")
+        
+        # If we still don't have a company name, use a placeholder with the CIK
+        if not company_name:
+            company_name = f"Company CIK: {cik}"
+        
         # Create a new document with better metadata
         document = Document(
             url=filing_url,
             content_type='edgar',  # Use 'edgar' type instead of 'url' for better handling
-            title=f"10-K Filing: {company_name or 'Unknown Company'}",
+            title=f"10-K Filing: {company_name}",
             company_name=company_name,
             cik=cik,
             use_demo_mode=use_demo_mode,

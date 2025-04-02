@@ -70,13 +70,19 @@ def search_company(company_name):
                 # If we can't extract CIK from company_info, try to find it elsewhere on the page
                 cik_element = soup.find('input', {'name': 'CIK'}) or soup.find('span', string=re.compile(r'CIK.*\d+'))
                 if cik_element:
-                    cik_text = cik_element.get('value', '') if cik_element.get('value') else cik_element.text
-                    cik_match = re.search(r'(\d+)', cik_text)
-                    if cik_match:
-                        company_cik = cik_match.group(1).lstrip('0')  # Remove leading zeros
-                        company_name = company_info.text.split('(')[0].strip()
-                        logger.info(f"Extracted CIK: {company_cik}, Company Name: {company_name}")
-                        return [{'cik': company_cik, 'name': company_name}]
+                    # Handle different element types safely
+                    if hasattr(cik_element, 'name') and cik_element.name == 'input' and hasattr(cik_element, 'attrs') and 'value' in cik_element.attrs:
+                        cik_text = cik_element.attrs['value']
+                    else:
+                        cik_text = cik_element.text if hasattr(cik_element, 'text') else str(cik_element)
+                        
+                    if cik_text and isinstance(cik_text, str):
+                        cik_match = re.search(r'(\d+)', cik_text)
+                        if cik_match:
+                            company_cik = cik_match.group(1).lstrip('0')  # Remove leading zeros
+                            company_name = company_info.text.split('(')[0].strip()
+                            logger.info(f"Extracted CIK: {company_cik}, Company Name: {company_name}")
+                            return [{'cik': company_cik, 'name': company_name}]
                 
                 logger.warning(f"Could not extract CIK from company info: {str(company_info)}")
         
