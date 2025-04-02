@@ -14,7 +14,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 # AI Model Configuration - read from environment
-AI_MODEL_TYPE = os.environ.get("AI_MODEL_TYPE", "openai").lower()  # Default to OpenAI if not specified
+AI_MODEL_TYPE = os.environ.get("AI_MODEL_TYPE", "huggingface").lower()  # Default to Hugging Face
 HUGGINGFACE_MODEL = os.environ.get("HUGGINGFACE_MODEL", "mistral")  # Default Hugging Face model
 
 # Initialize OpenAI client functions
