@@ -235,6 +235,16 @@ body {
   color: var(--bs-dark);
 }
 
+/* Main heading style for light mode */
+[data-bs-theme="light"] h1, 
+[data-bs-theme="light"] h2, 
+[data-bs-theme="light"] h3, 
+[data-bs-theme="light"] .h1, 
+[data-bs-theme="light"] .h2, 
+[data-bs-theme="light"] .h3 {
+  color: var(--bs-dark);
+}
+
 /* Fix for the card icons in dark/light modes */
 [data-bs-theme="light"] .card-icon {
   color: var(--bs-light);

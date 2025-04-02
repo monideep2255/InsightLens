@@ -118,7 +118,7 @@
                                     <small>CIK: {{ company.cik }}</small>
                                 </div>
                                 <div class="mt-2">
-                                    <a href="{{ url_for('edgar.process_10k', cik=company.cik) }}" class="btn btn-primary btn-sm process-btn" onclick="showLoading(this)">
+                                    <a href="{{ url_for('edgar.process_10k', cik=company.cik, company_name=company.name) }}" class="btn btn-primary btn-sm process-btn" onclick="showLoading(this)">
                                         <i class="fas fa-file-alt me-1"></i> <span class="btn-text">Process Latest 10-K</span>
                                         <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
                                     </a>

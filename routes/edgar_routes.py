@@ -42,8 +42,13 @@ def process_10k(cik):
     Process the latest 10-K filing for a company
     """
     try:
-        # Get company name if provided
-        company_name = request.args.get('company_name', '')
+        # Get company name from the query parameters (from the search results page)
+        # The company name may come from either a query parameter or the form
+        company_name = request.args.get('company_name', '') or request.args.get('name', '')
+        
+        # If it's coming from search results, extract the company name from the SIC info
+        if company_name and 'SIC:' in company_name:
+            company_name = company_name.split('SIC:')[0].strip()
         
         # Get the latest 10-K URL
         filing_url = get_latest_10k(cik)
