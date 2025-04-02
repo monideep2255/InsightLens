@@ -11,6 +11,30 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+    <style>
+        /* Fix for light mode text visibility */
+        [data-bs-theme="light"] {
+            --bs-body-color: #212529;
+            --bs-body-bg: #ffffff;
+        }
+        [data-bs-theme="light"] .text-body {
+            color: #212529 !important;
+        }
+        [data-bs-theme="light"] .card {
+            color: #212529;
+            background-color: #ffffff;
+        }
+        [data-bs-theme="light"] .card-header {
+            background-color: rgba(0, 0, 0, 0.03);
+        }
+        /* Ensure footer text is visible in light mode */
+        [data-bs-theme="light"] footer {
+            color: #212529 !important;
+        }
+        [data-bs-theme="light"] footer .text-white-50 {
+            color: #6c757d !important;
+        }
+    </style>
     {% block styles %}{% endblock %}
 </head>
 <body>

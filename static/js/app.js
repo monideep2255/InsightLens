@@ -55,6 +55,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Toggle stylesheets
         if (theme === 'dark') {
+            // Enable dark theme stylesheet, disable light theme
             darkThemeStylesheet.removeAttribute('disabled');
             lightThemeStylesheet.setAttribute('disabled', '');
             
@@ -64,8 +65,9 @@ document.addEventListener('DOMContentLoaded', function() {
             document.querySelector('footer').classList.add('bg-dark');
             document.querySelector('footer').classList.remove('bg-light');
         } else {
-            darkThemeStylesheet.setAttribute('disabled', '');
+            // Enable light theme stylesheet, disable dark theme
             lightThemeStylesheet.removeAttribute('disabled');
+            darkThemeStylesheet.setAttribute('disabled', '');
             
             // Update navbar and footer for light mode
             document.querySelector('nav').classList.remove('navbar-dark', 'bg-dark');
