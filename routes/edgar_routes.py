@@ -122,6 +122,10 @@ def process_10k(cik):
         if not company_name:
             company_name = f"Company CIK: {cik}"
         
+        # Clean the company name - remove any CIK references
+        if 'CIK#:' in company_name:
+            company_name = company_name.split('CIK#:')[0].strip()
+            
         # Create a new document with better metadata
         document = Document(
             url=filing_url,

@@ -235,6 +235,11 @@ body {
   color: var(--bs-dark);
 }
 
+/* Research Methods card headers - light mode */
+[data-bs-theme="light"] .card-header .card-icon.bg-secondary {
+  background-color: var(--bs-gray-400) !important;
+}
+
 /* Main heading style for light mode */
 [data-bs-theme="light"] h1, 
 [data-bs-theme="light"] h2, 
