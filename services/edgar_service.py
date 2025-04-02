@@ -25,31 +25,63 @@ def search_company(company_name):
     }
     
     try:
+        logger.info(f"Searching SEC EDGAR for company: {company_name}")
+        logger.info(f"Request URL: {base_url} with params: {params}")
+        
         response = requests.get(base_url, params=params, headers=headers)
+        
+        # Log the response status
+        logger.info(f"SEC EDGAR search response status: {response.status_code}")
+        
+        if response.status_code != 200:
+            logger.error(f"HTTP Error: {response.status_code} - {response.text}")
+            return []
+            
         response.raise_for_status()
+        
+        # Log response size to help with debugging
+        logger.info(f"SEC EDGAR search response size: {len(response.text)} characters")
+        
+        # Save a snippet of the response for debugging
+        response_snippet = response.text[:500] + "..." if len(response.text) > 500 else response.text
+        logger.debug(f"Response snippet: {response_snippet}")
         
         soup = BeautifulSoup(response.text, 'html.parser')
         
         # Check if company was found
         no_results = soup.find(string=re.compile("No matching companies"))
         if no_results:
+            logger.info(f"No matching companies found for: {company_name}")
             return []
         
         # If only one company matches, we might be redirected to the company page
         company_info = soup.find('span', {'class': 'companyName'})
         if company_info:
+            logger.info(f"Found a single company match: {company_info.text if company_info else 'Unknown'}")
             cik = re.search(r'CIK=(\d+)', str(company_info))
             if cik:
                 company_cik = cik.group(1)
                 company_name = company_info.text.split('(')[0].strip()
+                logger.info(f"Extracted CIK: {company_cik}, Company Name: {company_name}")
                 return [{'cik': company_cik, 'name': company_name}]
+            else:
+                logger.warning(f"Could not extract CIK from company info: {str(company_info)}")
         
         # If multiple companies match, parse the results table
         companies = []
         results_table = soup.find('table', {'summary': 'Results'})
         if results_table:
-            rows = results_table.find_all('tr')
-            for row in rows[1:]:  # Skip header row
+            logger.info("Found results table with multiple companies")
+            # Make sure results_table is a bs4 element before calling find_all
+            rows = []
+            if hasattr(results_table, 'find_all'):
+                rows = results_table.find_all('tr')
+                logger.info(f"Found {len(rows)-1} company rows in results table")
+            else:
+                logger.warning("Results table is not a proper BeautifulSoup element, cannot find rows")
+            
+            # Process rows only if we actually found some
+            for row in rows[1:] if rows else []:  # Skip header row
                 cols = row.find_all('td')
                 if len(cols) >= 2:
                     company_name = cols[1].text.strip()
@@ -57,11 +89,18 @@ def search_company(company_name):
                     if cik_match:
                         company_cik = cik_match.group(1)
                         companies.append({'cik': company_cik, 'name': company_name})
+                        logger.info(f"Added company: {company_name} with CIK: {company_cik}")
+                    else:
+                        logger.warning(f"Could not extract CIK for company: {company_name} from column: {str(cols[0])}")
+        else:
+            logger.warning("Could not find results table in SEC EDGAR response")
         
+        logger.info(f"Returning {len(companies)} companies from search results")
         return companies
         
     except Exception as e:
-        logger.error(f"Error searching for company: {str(e)}")
+        logger.error(f"Error searching for company '{company_name}': {str(e)}")
+        logger.exception("Exception details:")
         return []
 
 

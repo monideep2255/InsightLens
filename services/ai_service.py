@@ -23,6 +23,16 @@ def get_openai_client():
     if not api_key:
         logger.warning("OPENAI_API_KEY not found in environment variables")
         return None
+    
+    logger.debug(f"Initializing OpenAI client with API key starting with {api_key[:8]}...")
+    
+    # Configuration for organization ID if present
+    organization = os.environ.get("OPENAI_ORGANIZATION")
+    if organization:
+        logger.debug(f"Using organization ID: {organization}")
+        return OpenAI(api_key=api_key, organization=organization)
+    
+    # No organization ID, use standard client
     return OpenAI(api_key=api_key)
 
 # Initialize a global variable for reference, but we'll refresh before each use
@@ -169,7 +179,16 @@ def generate_insights_with_openai(content):
     # Check for API key on each call, not relying on global variable
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
+        logger.error("OPENAI_API_KEY not found in environment variables")
         return {category: "<p>OpenAI API key not configured.</p>" for category in PROMPT_TEMPLATES.keys()}
+    
+    # Log API key format for debugging (securely)
+    key_prefix = api_key[:8] if len(api_key) > 8 else "too_short"
+    logger.debug(f"Using OpenAI API key with prefix: {key_prefix}...")
+    
+    # Check if this is a project-based API key (sk-proj-*)
+    if api_key.startswith("sk-proj-"):
+        logger.info("Detected project-based API key (sk-proj-*)")
     
     insights = {}
     
