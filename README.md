@@ -2,6 +2,10 @@
 
 InsightLens is an AI-powered research assistant designed to help users evaluate companies through the lens of value investing principles (Benjamin Graham/Warren Buffett approach). The system processes financial reports from the SEC EDGAR database or uploaded PDF documents and generates structured insight cards with analysis on various aspects of a company, including Business Summary, Moat & Edge, Basic Financial Health, and Management Snapshot. Featuring direct access to 10-K filings for the "Magnificent 7" tech companies and robust caching for efficient API usage.
 
+## Legal Notice
+
+This tool is designed as a research assistant, not a financial advisor. Always perform your own due diligence before making investment decisions.
+
 ## Currently Implemented Features
 
 ### Phase 1 Core
@@ -115,10 +119,6 @@ InsightLens is an AI-powered research assistant designed to help users evaluate 
 - Document processing time varies based on file size and AI provider load
 - Analysis quality depends on document content quality and depth
 - Demo mode provides sample insights without API costs but with less specificity
-
-## Legal Notice
-
-This tool is designed as a research assistant, not a financial advisor. Always perform your own due diligence before making investment decisions.
 
 ## Local Development Setup
 
