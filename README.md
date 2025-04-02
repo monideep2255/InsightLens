@@ -122,7 +122,17 @@ This tool is designed as a research assistant, not a financial advisor. Always p
 
 ## Local Development Setup
 
-1. **Set up environment variables**
+1. **Prerequisites**
+   - Python 3.11 or higher
+   - PostgreSQL database server
+   - Python packages listed in pyproject.toml
+
+2. **Install Dependencies**
+   ```bash
+   pip install -r sample_requirements.txt
+   ```
+
+3. **Set up environment variables**
    Create a `.env` file with:
    ```
    FLASK_SECRET_KEY=your_random_secret_key
@@ -140,13 +150,51 @@ This tool is designed as a research assistant, not a financial advisor. Always p
    # AI_MODEL_TYPE=openai
    ```
 
-2. **Initialize the database**
-   ```bash
-   python recreate_db.py
-   ```
+4. **Set up PostgreSQL**
+   - Create a database named 'insightlens'
+   - Update DATABASE_URL in .env with your credentials
+   - Initialize database:
+     ```bash
+     python recreate_db.py
+     ```
 
-3. **Run the application**
+5. **Run the application**
+   Development mode:
    ```bash
    python main.py
    ```
+   Production mode:
+   ```bash
+   gunicorn --bind 0.0.0.0:5000 main:app
+   ```
    The application will be available at http://0.0.0.0:5000
+
+## Deployment Options
+
+### Deploying on Replit (Recommended)
+
+1. **Using Replit's Autoscale Deployment**
+   - Click the "Deploy" button in your Repl
+   - Select "Autoscale" deployment type
+   - Configure deployment:
+     - Machine: 1vCPU, 2 GiB RAM (default)
+     - Max machines: 3 (default)
+     - Run command: `python main.py`
+   - Click "Deploy" to publish your application
+
+2. **Using Replit's Reserved VM**
+   For long-running, compute-intensive workloads:
+   - Click "Deploy" in your Repl
+   - Select "Reserved VM"
+   - Configure VM size and run command
+   - Deploy your application
+
+Key Benefits of Replit Deployment:
+- Automatic HTTPS/SSL
+- Built-in environment management
+- Automatic package installation
+- Integrated deployment monitoring
+- Easy scaling capabilities
+- Zero-configuration PostgreSQL database
+
+For more deployment options and advanced configurations, refer to Replit's deployment documentation.
