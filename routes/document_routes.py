@@ -19,8 +19,8 @@ def upload_document():
     """Handle document upload (PDF only)"""
     upload_type = request.form.get('upload_type', 'file')
     
-    # Processing options
-    use_demo_mode = request.form.get('use_demo_mode') == 'on'
+    # Processing options - enable demo mode by default to avoid API issues
+    use_demo_mode = request.form.get('use_demo_mode') == 'on' or request.form.get('demo_mode') != 'false'
     use_local_processing = request.form.get('use_local_processing') == 'on'
     company_name = request.form.get('company_name', '').strip()
     
