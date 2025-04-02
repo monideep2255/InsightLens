@@ -153,12 +153,30 @@ def generate_insights(content):
     Generate structured insights from document content using the configured AI model
     Returns a dictionary mapping insight categories to their content
     """
-    # Choose the appropriate model based on configuration
+    # Check for cached results first
+    try:
+        # Import here to avoid circular imports
+        from services.cache_service import get_cached_ai_response, save_ai_response
+        
+        # Get combined prompt for cache key
+        combined_prompt = "".join(prompt for category, prompt in PROMPT_TEMPLATES.items())
+        
+        # Look for cached responses
+        cached_insights = get_cached_ai_response(content, combined_prompt, AI_MODEL_TYPE)
+        if cached_insights:
+            logger.info("Using cached insights")
+            return cached_insights
+    except ImportError:
+        logger.warning("Cache service not available, skipping cache check")
+    except Exception as cache_error:
+        logger.warning(f"Error checking cache: {str(cache_error)}")
+        
+    # No cached results, generate new insights
     try:
         if AI_MODEL_TYPE == "openai" and OPENAI_AVAILABLE:
-            return generate_insights_with_openai(content)
+            insights = generate_insights_with_openai(content)
         elif AI_MODEL_TYPE == "huggingface":
-            return generate_insights_with_huggingface(content)
+            insights = generate_insights_with_huggingface(content)
         else:
             logger.error(f"Invalid AI model type: {AI_MODEL_TYPE}")
             return {
@@ -167,6 +185,18 @@ def generate_insights(content):
                 'financial': "<p>AI model configuration error. Please check server logs.</p>",
                 'management': "<p>AI model configuration error. Please check server logs.</p>"
             }
+        
+        # Cache the results
+        try:
+            from services.cache_service import save_ai_response
+            # Get combined prompt for cache key
+            combined_prompt = "".join(prompt for category, prompt in PROMPT_TEMPLATES.items())
+            save_ai_response(content, combined_prompt, AI_MODEL_TYPE, insights)
+        except Exception as cache_save_error:
+            logger.warning(f"Error saving to cache: {str(cache_save_error)}")
+            
+        return insights
+        
     except Exception as e:
         logger.error(f"All AI models failed to generate insights: {str(e)}")
         error_message = str(e)
@@ -174,10 +204,10 @@ def generate_insights(content):
         # Check for quota exceeded messages
         if "quota" in error_message.lower() or "429" in error_message:
             return {
-                'business_summary': "<p>OpenAI API quota exceeded. Please check your account billing or try again later.</p>",
-                'moat': "<p>OpenAI API quota exceeded. Please check your account billing or try again later.</p>",
-                'financial': "<p>OpenAI API quota exceeded. Please check your account billing or try again later.</p>",
-                'management': "<p>OpenAI API quota exceeded. Please check your account billing or try again later.</p>"
+                'business_summary': "<p>API quota exceeded. Please check your account billing or try again later.</p>",
+                'moat': "<p>API quota exceeded. Please check your account billing or try again later.</p>",
+                'financial': "<p>API quota exceeded. Please check your account billing or try again later.</p>",
+                'management': "<p>API quota exceeded. Please check your account billing or try again later.</p>"
             }
         
         # Generic error fallback

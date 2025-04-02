@@ -1,5 +1,6 @@
 import os
 import logging
+import time
 from datetime import datetime
 from werkzeug.utils import secure_filename
 from flask import current_app
@@ -16,6 +17,13 @@ try:
     EDGAR_SERVICE_AVAILABLE = True
 except ImportError:
     EDGAR_SERVICE_AVAILABLE = False
+
+# Try to import the cache service
+try:
+    from services.cache_service import clear_old_cache_entries, get_cache_stats
+    CACHE_SERVICE_AVAILABLE = True
+except ImportError:
+    CACHE_SERVICE_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +45,9 @@ def process_document(document_id):
     db.session.commit()
     
     try:
+        # Start processing timer
+        start_time = time.time()
+        
         # Check if we should use demo mode
         if document.use_demo_mode:
             # Use appropriate demo template based on content type or company name
@@ -56,7 +67,10 @@ def process_document(document_id):
             logger.info(f"Using demo mode with {company_type} template for document {document_id}")
             
             # Get demo insights
+            demo_start_time = time.time()
             insights = generate_demo_insights(document_id, company_type)
+            demo_time = time.time() - demo_start_time
+            logger.info(f"Demo insights generated in {demo_time:.2f} seconds")
             
             # Add a note that this is demo mode
             for category in insights:
@@ -64,6 +78,8 @@ def process_document(document_id):
                 
         else:
             # Regular processing mode - extract content based on document type
+            extraction_start_time = time.time()
+            
             if document.content_type == 'pdf':
                 upload_folder = current_app.config['UPLOAD_FOLDER']
                 file_path = os.path.join(upload_folder, document.filename)
@@ -85,6 +101,9 @@ def process_document(document_id):
             else:
                 raise ValueError(f"Unsupported content type: {document.content_type}")
             
+            extraction_time = time.time() - extraction_start_time
+            logger.info(f"Content extraction completed in {extraction_time:.2f} seconds")
+            
             if not content:
                 raise ValueError("Could not extract any content from the document. The document may be empty or in an unsupported format.")
                 
@@ -95,34 +114,49 @@ def process_document(document_id):
                 if document.content_type == 'edgar':
                     raise ValueError("Could not extract sufficient content from the SEC filing. This could be due to the filing using a newer format that our system cannot process. Please try a different company or upload a PDF version of the 10-K if available.")
             
+            logger.info(f"Extracted content length: {len(content)} characters")
+            
             # Generate insights using either AI or local processing
             if document.use_local_processing:
                 logger.info(f"Using local processing for document {document_id}")
+                local_start_time = time.time()
                 insights = perform_local_analysis(content)
+                local_time = time.time() - local_start_time
+                logger.info(f"Local processing completed in {local_time:.2f} seconds")
                 
                 # Add a note that this is local processing mode
                 for category in insights:
                     insights[category] = f"<div class='alert alert-info'>LOCAL PROCESSING: This analysis was performed locally without AI.</div>{insights[category]}"
             else:
                 # Generate insights using AI and track usage
+                ai_start_time = time.time()
                 insights = generate_insights(content)
+                ai_time = time.time() - ai_start_time
+                logger.info(f"AI insights generated in {ai_time:.2f} seconds")
                 
                 # Monitor token usage - this would normally be provided by the API response
                 # Since we don't have direct access to token counts, we'll estimate based on content length
                 try:
+                    # Determine which API was used based on environment variables
+                    api_name = "huggingface" if os.environ.get("HUGGINGFACE_API_KEY") else "openai"
+                    
                     # Rough estimate: 1 token ≈ 4 characters
                     estimated_prompt_tokens = len(content) // 4
                     estimated_completion_tokens = sum(len(insight) for insight in insights.values()) // 4
                     
-                    # Calculate estimated cost
-                    estimated_cost = ApiUsage.calculate_openai_cost(
-                        estimated_prompt_tokens, 
-                        estimated_completion_tokens
-                    )
+                    # Calculate estimated cost based on API used
+                    if api_name == "openai":
+                        estimated_cost = ApiUsage.calculate_openai_cost(
+                            estimated_prompt_tokens, 
+                            estimated_completion_tokens
+                        )
+                    else:
+                        # Hugging Face pricing is variable, use a conservative estimate
+                        estimated_cost = (estimated_prompt_tokens * 0.00001) + (estimated_completion_tokens * 0.00002)
                     
                     # Record API usage
                     api_usage = ApiUsage(
-                        api_name="openai",  # Default to OpenAI, could be changed based on config
+                        api_name=api_name,
                         document_id=document.id,
                         prompt_tokens=estimated_prompt_tokens,
                         completion_tokens=estimated_completion_tokens,
@@ -132,6 +166,21 @@ def process_document(document_id):
                     logger.info(f"Recorded API usage: {estimated_prompt_tokens} prompt tokens, {estimated_completion_tokens} completion tokens, ${estimated_cost:.4f} est. cost")
                 except Exception as usage_error:
                     logger.error(f"Error recording API usage: {str(usage_error)}")
+            
+            # Clean up cache if available
+            if CACHE_SERVICE_AVAILABLE:
+                try:
+                    cache_start_time = time.time()
+                    cleared_entries = clear_old_cache_entries(max_age_days=7)
+                    cache_time = time.time() - cache_start_time
+                    if cleared_entries > 0:
+                        logger.info(f"Cleared {cleared_entries} old cache entries in {cache_time:.2f} seconds")
+                    
+                    # Get cache stats
+                    cache_stats = get_cache_stats()
+                    logger.info(f"Cache statistics: {cache_stats}")
+                except Exception as cache_error:
+                    logger.warning(f"Error managing cache: {str(cache_error)}")
         
         # Save insights to database
         for category, insight_content in insights.items():
@@ -157,7 +206,9 @@ def process_document(document_id):
         processing.completed_at = datetime.utcnow()
         db.session.commit()
         
-        logger.info(f"Successfully processed document {document_id}")
+        # Calculate and log total processing time
+        total_time = time.time() - start_time
+        logger.info(f"Successfully processed document {document_id} in {total_time:.2f} seconds")
         return True
     
     except Exception as e:
