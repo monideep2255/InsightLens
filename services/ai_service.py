@@ -71,6 +71,14 @@ if AI_MODEL_TYPE == "huggingface":
         "mistral": "mistralai/Mixtral-8x7B-Instruct-v0.1"
     }
 
+# Import the new prompt templates from new_prompt_templates.py
+try:
+    from services.new_prompt_templates import NEW_PROMPT_TEMPLATES
+    logger.info(f"Imported {len(NEW_PROMPT_TEMPLATES)} new prompt templates")
+except ImportError as e:
+    logger.error(f"Error importing new prompt templates: {str(e)}")
+    NEW_PROMPT_TEMPLATES = {}
+
 # Prompt templates - Base templates
 BASE_PROMPT_TEMPLATES = {
     'business_summary': """

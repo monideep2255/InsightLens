@@ -93,16 +93,42 @@ def generate_insights_with_huggingface(content, model_name="mistral"):
             end_idx = raw_output.rfind('}') + 1
             if start_idx >= 0 and end_idx > start_idx:
                 json_str = raw_output[start_idx:end_idx]
-                insights = json.loads(json_str)
+                insights_data = json.loads(json_str)
             else:
                 # Fallback: try to parse entire response as JSON
-                insights = json.loads(raw_output)
+                insights_data = json.loads(raw_output)
             
-            # Ensure all required categories exist
+            # Ensure all required categories exist and convert any nested dictionaries to strings
+            insights = {}
             required_keys = ['business_summary', 'moat', 'financial', 'management']
+            
             for key in required_keys:
-                if key not in insights:
+                if key not in insights_data:
                     insights[key] = "No information available"
+                else:
+                    # Check if the value is a dictionary and convert to string if needed
+                    if isinstance(insights_data[key], dict):
+                        # Format the nested dictionary into a nice HTML string
+                        formatted_content = "<div class='nested-content'>"
+                        for subkey, subvalue in insights_data[key].items():
+                            formatted_content += f"<h4>{subkey.title()}</h4><p>{subvalue}</p>"
+                        formatted_content += "</div>"
+                        insights[key] = formatted_content
+                    else:
+                        insights[key] = insights_data[key]
+            
+            # Add any additional keys that weren't in required_keys
+            for key in insights_data:
+                if key not in required_keys:
+                    if isinstance(insights_data[key], dict):
+                        # Format the nested dictionary into a nice HTML string
+                        formatted_content = "<div class='nested-content'>"
+                        for subkey, subvalue in insights_data[key].items():
+                            formatted_content += f"<h4>{subkey.title()}</h4><p>{subvalue}</p>"
+                        formatted_content += "</div>"
+                        insights[key] = formatted_content
+                    else:
+                        insights[key] = insights_data[key]
             
             return insights
             

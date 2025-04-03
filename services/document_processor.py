@@ -153,15 +153,24 @@ def process_document(document_id):
                 # Determine additional prompt templates to use based on document options
                 additional_prompts = {}
                 
+                # Add enhanced moat analysis for all documents (Phase 2.1 feature)
+                additional_prompts['moat_analysis'] = True
+                logger.info(f"Using enhanced moat analysis for document {document_id}")
+                
+                # Add margin of safety commentary for all documents (Phase 2.1 feature) 
+                additional_prompts['margin_of_safety'] = True
+                logger.info(f"Adding margin of safety commentary for document {document_id}")
+                
                 # Add red flags detection for all documents
                 additional_prompts['red_flags'] = True
+                logger.info(f"Adding red flags detection for document {document_id}")
                 
-                # Add Buffett analysis if requested
+                # Add Buffett analysis if requested (Phase 2.2 feature)
                 if document.use_buffett_mode:
                     additional_prompts['buffett_analysis'] = True
                     logger.info(f"Using Warren Buffett analysis mode for document {document_id}")
                 
-                # Add biotech analysis if requested or if the industry is detected as biotech
+                # Add biotech analysis if requested or if the industry is detected as biotech (Phase 2.2 feature)
                 if document.use_biotech_mode or (document.industry_type and 
                     document.industry_type.lower() in ["biotech", "pharmaceutical", "healthcare"]):
                     additional_prompts['biotech_analysis'] = True
@@ -259,11 +268,59 @@ def process_document(document_id):
                     
                     insights['red_flags'] = red_flags_insight
                 
+                # Check if moat analysis is missing (Phase 2.1 feature)
+                if 'moat_analysis' not in insights:
+                    logger.info(f"Adding missing enhanced moat analysis for document {document_id}")
+                    from services.new_prompt_templates import NEW_PROMPT_TEMPLATES
+                    moat_prompt = NEW_PROMPT_TEMPLATES['moat_analysis'].format(content=content)
+                    
+                    if os.environ.get("HUGGINGFACE_API_KEY"):
+                        from services.open_source_ai import analyze_with_prompt
+                        moat_insight = analyze_with_prompt(content, moat_prompt)
+                    else:
+                        from services.ai_service import get_openai_client
+                        client = get_openai_client()
+                        response = client.chat.completions.create(
+                            model="gpt-4o",
+                            messages=[
+                                {"role": "system", "content": "You are Warren Buffett analyzing a company's competitive advantages."},
+                                {"role": "user", "content": moat_prompt}
+                            ],
+                            temperature=0.3
+                        )
+                        moat_insight = response.choices[0].message.content
+                    
+                    insights['moat_analysis'] = moat_insight
+                
+                # Check if margin of safety analysis is missing (Phase 2.1 feature)
+                if 'margin_of_safety' not in insights:
+                    logger.info(f"Adding missing margin of safety analysis for document {document_id}")
+                    from services.new_prompt_templates import NEW_PROMPT_TEMPLATES
+                    margin_prompt = NEW_PROMPT_TEMPLATES['margin_of_safety'].format(content=content)
+                    
+                    if os.environ.get("HUGGINGFACE_API_KEY"):
+                        from services.open_source_ai import analyze_with_prompt
+                        margin_insight = analyze_with_prompt(content, margin_prompt)
+                    else:
+                        from services.ai_service import get_openai_client
+                        client = get_openai_client()
+                        response = client.chat.completions.create(
+                            model="gpt-4o",
+                            messages=[
+                                {"role": "system", "content": "You are a value investor evaluating the margin of safety for a potential investment."},
+                                {"role": "user", "content": margin_prompt}
+                            ],
+                            temperature=0.3
+                        )
+                        margin_insight = response.choices[0].message.content
+                    
+                    insights['margin_of_safety'] = margin_insight
+                
                 # Check if biotech analysis is missing but requested
                 if document.use_biotech_mode and 'biotech_analysis' not in insights:
                     logger.info(f"Adding missing biotech-specific analysis for document {document_id}")
-                    from services.ai_service import PROMPT_TEMPLATES
-                    biotech_prompt = PROMPT_TEMPLATES['biotech_analysis'].format(content=content)
+                    from services.new_prompt_templates import NEW_PROMPT_TEMPLATES
+                    biotech_prompt = NEW_PROMPT_TEMPLATES['biotech_analysis'].format(content=content)
                     
                     if os.environ.get("HUGGINGFACE_API_KEY"):
                         from services.open_source_ai import analyze_with_prompt

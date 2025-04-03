@@ -131,6 +131,42 @@
                     </div>
                 {% endif %}
                 
+                <!-- Enhanced Moat Analysis - Phase 2.1 feature -->
+                {% set moat_analysis = insights|selectattr('category', 'equalto', 'moat_analysis')|first %}
+                {% if moat_analysis %}
+                    <div class="card insight-card mb-4">
+                        <div class="card-header">
+                            <div class="card-title-wrapper">
+                                <div class="card-icon bg-success text-dark">
+                                    <i class="fas fa-chess-rook"></i>
+                                </div>
+                                <h5 class="card-title mb-0">Enhanced Moat Analysis</h5>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            {{ moat_analysis.content|safe }}
+                        </div>
+                    </div>
+                {% endif %}
+                
+                <!-- Margin of Safety - Phase 2.1 feature -->
+                {% set margin_of_safety = insights|selectattr('category', 'equalto', 'margin_of_safety')|first %}
+                {% if margin_of_safety %}
+                    <div class="card insight-card mb-4">
+                        <div class="card-header">
+                            <div class="card-title-wrapper">
+                                <div class="card-icon bg-primary text-dark">
+                                    <i class="fas fa-life-ring"></i>
+                                </div>
+                                <h5 class="card-title mb-0">Margin of Safety</h5>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            {{ margin_of_safety.content|safe }}
+                        </div>
+                    </div>
+                {% endif %}
+                
                 <!-- Biotech Analysis - Only shown if biotech_analysis category exists -->
                 {% set biotech_analysis = insights|selectattr('category', 'equalto', 'biotech_analysis')|first %}
                 {% if biotech_analysis %}
