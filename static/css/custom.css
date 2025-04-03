@@ -93,6 +93,31 @@ body {
   margin-right: 10px;
 }
 
+/* Enhanced spacing for new analysis sections */
+.card-body h4 {
+  margin-top: 20px;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+/* Extra spacing for the first heading in a section */
+.card-body h4:first-of-type {
+  margin-top: 10px;
+}
+
+/* Nested content from AI responses */
+.nested-content {
+  padding: 10px;
+  margin-bottom: 15px;
+}
+
+/* Special styling for the Enhanced Moat Analysis and Margin of Safety sections */
+.insight-card:has(.card-title:contains("Enhanced Moat Analysis")) .card-body,
+.insight-card:has(.card-title:contains("Margin of Safety")) .card-body {
+  padding: 1.5rem;
+  line-height: 1.6;
+}
+
 @media (max-width: 576px) {
   .card-title {
     font-size: 1rem;

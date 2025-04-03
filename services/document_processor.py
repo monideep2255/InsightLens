@@ -274,21 +274,47 @@ def process_document(document_id):
                     from services.new_prompt_templates import NEW_PROMPT_TEMPLATES
                     moat_prompt = NEW_PROMPT_TEMPLATES['moat_analysis'].format(content=content)
                     
+                    # First try with Hugging Face if available
                     if os.environ.get("HUGGINGFACE_API_KEY"):
-                        from services.open_source_ai import analyze_with_prompt
-                        moat_insight = analyze_with_prompt(content, moat_prompt)
+                        try:
+                            from services.open_source_ai import analyze_with_prompt
+                            moat_insight = analyze_with_prompt(content, moat_prompt)
+                            if "<p>Error calling AI service" in moat_insight or "402 Client Error" in moat_insight:
+                                # Hugging Face failed, fall back to OpenAI if available
+                                raise Exception("Hugging Face API failed, falling back to OpenAI")
+                        except Exception as e:
+                            logger.warning(f"Hugging Face API error: {str(e)}, falling back to OpenAI")
+                            # Fall back to OpenAI
+                            if os.environ.get("OPENAI_API_KEY"):
+                                from services.ai_service import get_openai_client
+                                client = get_openai_client()
+                                response = client.chat.completions.create(
+                                    model="gpt-4o",
+                                    messages=[
+                                        {"role": "system", "content": "You are Warren Buffett analyzing a company's competitive advantages."},
+                                        {"role": "user", "content": moat_prompt}
+                                    ],
+                                    temperature=0.3
+                                )
+                                moat_insight = response.choices[0].message.content
+                            else:
+                                moat_insight = "<p>Unable to generate analysis. Both Hugging Face and OpenAI services are unavailable.</p>"
                     else:
+                        # Use OpenAI directly if no Hugging Face API key
                         from services.ai_service import get_openai_client
                         client = get_openai_client()
-                        response = client.chat.completions.create(
-                            model="gpt-4o",
-                            messages=[
-                                {"role": "system", "content": "You are Warren Buffett analyzing a company's competitive advantages."},
-                                {"role": "user", "content": moat_prompt}
-                            ],
-                            temperature=0.3
-                        )
-                        moat_insight = response.choices[0].message.content
+                        if client:
+                            response = client.chat.completions.create(
+                                model="gpt-4o",
+                                messages=[
+                                    {"role": "system", "content": "You are Warren Buffett analyzing a company's competitive advantages."},
+                                    {"role": "user", "content": moat_prompt}
+                                ],
+                                temperature=0.3
+                            )
+                            moat_insight = response.choices[0].message.content
+                        else:
+                            moat_insight = "<p>Unable to generate analysis. No AI service is available.</p>"
                     
                     insights['moat_analysis'] = moat_insight
                 
@@ -298,21 +324,47 @@ def process_document(document_id):
                     from services.new_prompt_templates import NEW_PROMPT_TEMPLATES
                     margin_prompt = NEW_PROMPT_TEMPLATES['margin_of_safety'].format(content=content)
                     
+                    # First try with Hugging Face if available
                     if os.environ.get("HUGGINGFACE_API_KEY"):
-                        from services.open_source_ai import analyze_with_prompt
-                        margin_insight = analyze_with_prompt(content, margin_prompt)
+                        try:
+                            from services.open_source_ai import analyze_with_prompt
+                            margin_insight = analyze_with_prompt(content, margin_prompt)
+                            if "<p>Error calling AI service" in margin_insight or "402 Client Error" in margin_insight:
+                                # Hugging Face failed, fall back to OpenAI if available
+                                raise Exception("Hugging Face API failed, falling back to OpenAI")
+                        except Exception as e:
+                            logger.warning(f"Hugging Face API error: {str(e)}, falling back to OpenAI")
+                            # Fall back to OpenAI
+                            if os.environ.get("OPENAI_API_KEY"):
+                                from services.ai_service import get_openai_client
+                                client = get_openai_client()
+                                response = client.chat.completions.create(
+                                    model="gpt-4o",
+                                    messages=[
+                                        {"role": "system", "content": "You are a value investor evaluating the margin of safety for a potential investment."},
+                                        {"role": "user", "content": margin_prompt}
+                                    ],
+                                    temperature=0.3
+                                )
+                                margin_insight = response.choices[0].message.content
+                            else:
+                                margin_insight = "<p>Unable to generate analysis. Both Hugging Face and OpenAI services are unavailable.</p>"
                     else:
+                        # Use OpenAI directly if no Hugging Face API key
                         from services.ai_service import get_openai_client
                         client = get_openai_client()
-                        response = client.chat.completions.create(
-                            model="gpt-4o",
-                            messages=[
-                                {"role": "system", "content": "You are a value investor evaluating the margin of safety for a potential investment."},
-                                {"role": "user", "content": margin_prompt}
-                            ],
-                            temperature=0.3
-                        )
-                        margin_insight = response.choices[0].message.content
+                        if client:
+                            response = client.chat.completions.create(
+                                model="gpt-4o",
+                                messages=[
+                                    {"role": "system", "content": "You are a value investor evaluating the margin of safety for a potential investment."},
+                                    {"role": "user", "content": margin_prompt}
+                                ],
+                                temperature=0.3
+                            )
+                            margin_insight = response.choices[0].message.content
+                        else:
+                            margin_insight = "<p>Unable to generate analysis. No AI service is available.</p>"
                     
                     insights['margin_of_safety'] = margin_insight
                 
