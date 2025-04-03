@@ -94,6 +94,60 @@
                         </div>
                     </div>
                 {% endif %}
+                
+                <!-- Red Flags Detection - Only shown if red_flags category exists -->
+                {% set red_flags = insights|selectattr('category', 'equalto', 'red_flags')|first %}
+                {% if red_flags %}
+                    <div class="card insight-card mb-4">
+                        <div class="card-header">
+                            <div class="card-title-wrapper">
+                                <div class="card-icon bg-danger text-dark">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </div>
+                                <h5 class="card-title mb-0">Red Flags</h5>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            {{ red_flags.content|safe }}
+                        </div>
+                    </div>
+                {% endif %}
+                
+                <!-- Buffett Analysis - Only shown if buffett_analysis category exists -->
+                {% set buffett_analysis = insights|selectattr('category', 'equalto', 'buffett_analysis')|first %}
+                {% if buffett_analysis %}
+                    <div class="card insight-card mb-4">
+                        <div class="card-header">
+                            <div class="card-title-wrapper">
+                                <div class="card-icon bg-warning text-dark">
+                                    <i class="fas fa-award"></i>
+                                </div>
+                                <h5 class="card-title mb-0">Buffett's Perspective</h5>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            {{ buffett_analysis.content|safe }}
+                        </div>
+                    </div>
+                {% endif %}
+                
+                <!-- Biotech Analysis - Only shown if biotech_analysis category exists -->
+                {% set biotech_analysis = insights|selectattr('category', 'equalto', 'biotech_analysis')|first %}
+                {% if biotech_analysis %}
+                    <div class="card insight-card mb-4">
+                        <div class="card-header">
+                            <div class="card-title-wrapper">
+                                <div class="card-icon bg-info text-dark">
+                                    <i class="fas fa-microscope"></i>
+                                </div>
+                                <h5 class="card-title mb-0">Biotech Analysis</h5>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            {{ biotech_analysis.content|safe }}
+                        </div>
+                    </div>
+                {% endif %}
 
                 <!-- Research Methods -->
                 <div class="card insight-card mb-4">

@@ -2,6 +2,7 @@ import os
 import json
 import logging
 import requests
+from services.new_prompt_templates import NEW_PROMPT_TEMPLATES
 
 # Optional import of OpenAI
 try:
@@ -70,8 +71,8 @@ if AI_MODEL_TYPE == "huggingface":
         "mistral": "mistralai/Mixtral-8x7B-Instruct-v0.1"
     }
 
-# Prompt templates
-PROMPT_TEMPLATES = {
+# Prompt templates - Base templates
+BASE_PROMPT_TEMPLATES = {
     'business_summary': """
 You are an expert business analyst reviewing a company document.
 
@@ -148,24 +149,59 @@ DOCUMENT CONTENT:
 """
 }
 
-def generate_insights(content):
+# Combine base templates with new ones
+PROMPT_TEMPLATES = {**BASE_PROMPT_TEMPLATES, **NEW_PROMPT_TEMPLATES}
+
+def generate_insights(content, additional_prompt_templates=None, filter_categories=None, exclude_categories=None):
     """
     Generate structured insights from document content using the configured AI model
     Returns a dictionary mapping insight categories to their content
+    
+    Args:
+        content (str): The document content to analyze
+        additional_prompt_templates (dict, optional): A dictionary mapping additional prompt template 
+            names to boolean values indicating whether to include them in the analysis
+        filter_categories (list, optional): A list of category names to include (if specified, only these 
+            categories will be analyzed)
+        exclude_categories (list, optional): A list of category names to exclude from analysis
     """
+    # Default categories to analyze
+    if filter_categories:
+        # If filter_categories is provided, start with only those categories
+        categories_to_analyze = [category for category in filter_categories if category in PROMPT_TEMPLATES]
+        logger.info(f"Using filtered categories: {categories_to_analyze}")
+    else:
+        # Otherwise use the standard set
+        categories_to_analyze = ['business_summary', 'moat', 'financial', 'management']
+    
+    # Add additional prompt templates if specified
+    if additional_prompt_templates:
+        for template_name, include in additional_prompt_templates.items():
+            if include and template_name in PROMPT_TEMPLATES and template_name not in categories_to_analyze:
+                categories_to_analyze.append(template_name)
+                logger.info(f"Adding additional template: {template_name}")
+    
+    # Apply exclusions if specified
+    if exclude_categories:
+        categories_to_analyze = [category for category in categories_to_analyze if category not in exclude_categories]
+        logger.info(f"After exclusions, analyzing categories: {categories_to_analyze}")
+    
     # Check for cached results first
     try:
         # Import here to avoid circular imports
         from services.cache_service import get_cached_ai_response, save_ai_response
         
         # Get combined prompt for cache key
-        combined_prompt = "".join(prompt for category, prompt in PROMPT_TEMPLATES.items())
+        combined_prompt = "".join(PROMPT_TEMPLATES[category] for category in categories_to_analyze if category in PROMPT_TEMPLATES)
         
         # Look for cached responses
         cached_insights = get_cached_ai_response(content, combined_prompt, AI_MODEL_TYPE)
         if cached_insights:
             logger.info("Using cached insights")
-            return cached_insights
+            # Filter the cached insights to only include the requested categories
+            filtered_cached_insights = {category: content for category, content in cached_insights.items() 
+                                      if category in categories_to_analyze}
+            return filtered_cached_insights
     except ImportError:
         logger.warning("Cache service not available, skipping cache check")
     except Exception as cache_error:
@@ -174,23 +210,21 @@ def generate_insights(content):
     # No cached results, generate new insights
     try:
         if AI_MODEL_TYPE == "openai" and OPENAI_AVAILABLE:
-            insights = generate_insights_with_openai(content)
+            insights = generate_insights_with_openai(content, categories_to_analyze)
         elif AI_MODEL_TYPE == "huggingface":
-            insights = generate_insights_with_huggingface(content)
+            insights = generate_insights_with_huggingface(content, categories_to_analyze)
         else:
             logger.error(f"Invalid AI model type: {AI_MODEL_TYPE}")
             return {
-                'business_summary': "<p>AI model configuration error. Please check server logs.</p>",
-                'moat': "<p>AI model configuration error. Please check server logs.</p>",
-                'financial': "<p>AI model configuration error. Please check server logs.</p>",
-                'management': "<p>AI model configuration error. Please check server logs.</p>"
+                category: f"<p>AI model configuration error. Please check server logs.</p>" 
+                for category in categories_to_analyze
             }
         
         # Cache the results
         try:
             from services.cache_service import save_ai_response
-            # Get combined prompt for cache key
-            combined_prompt = "".join(prompt for category, prompt in PROMPT_TEMPLATES.items())
+            # Get combined prompt for cache key - include all requested categories
+            combined_prompt = "".join(PROMPT_TEMPLATES[category] for category in categories_to_analyze if category in PROMPT_TEMPLATES)
             save_ai_response(content, combined_prompt, AI_MODEL_TYPE, insights)
         except Exception as cache_save_error:
             logger.warning(f"Error saving to cache: {str(cache_save_error)}")
@@ -204,24 +238,27 @@ def generate_insights(content):
         # Check for quota exceeded messages
         if "quota" in error_message.lower() or "429" in error_message:
             return {
-                'business_summary': "<p>API quota exceeded. Please check your account billing or try again later.</p>",
-                'moat': "<p>API quota exceeded. Please check your account billing or try again later.</p>",
-                'financial': "<p>API quota exceeded. Please check your account billing or try again later.</p>",
-                'management': "<p>API quota exceeded. Please check your account billing or try again later.</p>"
+                category: "<p>API quota exceeded. Please check your account billing or try again later.</p>"
+                for category in categories_to_analyze
             }
         
         # Generic error fallback
         return {
-            'business_summary': f"<p>Unable to generate insights. Error: {error_message}</p>",
-            'moat': f"<p>Unable to generate insights. Error: {error_message}</p>",
-            'financial': f"<p>Unable to generate insights. Error: {error_message}</p>",
-            'management': f"<p>Unable to generate insights. Error: {error_message}</p>"
+            category: f"<p>Unable to generate insights. Error: {error_message}</p>"
+            for category in categories_to_analyze
         }
 
-def generate_insights_with_openai(content):
+def generate_insights_with_openai(content, categories_to_analyze=None):
     """
     Generate insights using OpenAI's API
+    
+    Args:
+        content (str): The document content to analyze
+        categories_to_analyze (list, optional): List of categories to analyze
     """
+    # Default categories if none specified
+    if categories_to_analyze is None:
+        categories_to_analyze = ['business_summary', 'moat', 'financial', 'management']
     # Check for API key on each call, not relying on global variable
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
@@ -298,8 +335,14 @@ def generate_insights_with_openai(content):
         else:
             content_to_analyze = truncated_content
     
-        # Process each insight category with its own prompt
-        for category, prompt_template in PROMPT_TEMPLATES.items():
+        # Process only the requested insight categories
+        for category in categories_to_analyze:
+            # Skip if the category doesn't have a template
+            if category not in PROMPT_TEMPLATES:
+                logger.warning(f"No template found for category: {category}")
+                continue
+                
+            prompt_template = PROMPT_TEMPLATES[category]
             try:
                 # Fill the prompt template with optimized content
                 prompt = prompt_template.format(content=content_to_analyze)
@@ -335,7 +378,13 @@ def generate_insights_with_openai(content):
     except Exception as e:
         logger.error(f"Error in content preprocessing: {str(e)}")
         # Fallback to a simpler approach if summarization fails
-        for category, prompt_template in PROMPT_TEMPLATES.items():
+        for category in categories_to_analyze:
+            # Skip if the category doesn't have a template
+            if category not in PROMPT_TEMPLATES:
+                logger.warning(f"No template found for category: {category}")
+                continue
+                
+            prompt_template = PROMPT_TEMPLATES[category]
             try:
                 # Use a much smaller content sample for fallback
                 prompt = prompt_template.format(content=content[:5000])
@@ -365,135 +414,50 @@ def generate_insights_with_openai(content):
     
     return insights
 
-def generate_insights_with_huggingface(content):
+def generate_insights_with_huggingface(content, categories_to_analyze=None):
     """
     Generate insights using Hugging Face's API
+    
+    Args:
+        content (str): The document content to analyze
+        categories_to_analyze (list, optional): List of categories to analyze
     """
+    if categories_to_analyze is None:
+        categories_to_analyze = ['business_summary', 'moat', 'financial', 'management']
+        
     if not os.environ.get("HUGGINGFACE_API_KEY"):
-        return {category: "<p>Hugging Face API key not configured.</p>" for category in PROMPT_TEMPLATES.keys()}
+        return {category: "<p>Hugging Face API key not configured.</p>" for category in categories_to_analyze}
     
-    # Create a more optimized process for Hugging Face
-    
-    # First, prepare optimized content
-    MAX_CONTENT_LENGTH = 8000
-    if len(content) > MAX_CONTENT_LENGTH:
-        logger.info(f"Content is large ({len(content)} chars), creating optimized version for Hugging Face")
-        # Extract the beginning content
-        beginning = content[:int(MAX_CONTENT_LENGTH * 0.4)]
-        # Extract the middle section
-        middle_start = int(len(content) * 0.4)
-        middle = content[middle_start:middle_start + int(MAX_CONTENT_LENGTH * 0.3)]
-        # Extract the end content
-        end = content[-int(MAX_CONTENT_LENGTH * 0.3):]
-        # Combine the parts with a note about truncation
-        optimized_content = beginning + "\n\n[...CONTENT TRUNCATED...]\n\n" + middle + "\n\n[...CONTENT TRUNCATED...]\n\n" + end
-    else:
-        optimized_content = content
-    
-    # Combine all prompts into a single comprehensive prompt for efficiency
-    combined_prompt = """
-    Analyze the following company document and extract structured insights using value investing principles.
-    
-    INSTRUCTIONS:
-    - Keep your analysis very concise (1-2 sentences per section)
-    - Focus only on facts found in the document, not general advice
-    - Format as HTML sections with these exact headings:
-    
-    <h4>Business Summary</h4>
-    [1-2 sentences on what the company does, its industry, and customers]
-    
-    <h4>Competitive Moat</h4>
-    [1-2 sentences on any competitive advantages or barriers to entry]
-    
-    <h4>Financial Health</h4>
-    [1-2 sentences on revenue, profitability, debt levels, cash flow]
-    
-    <h4>Management Analysis</h4>
-    [1-2 sentences on leadership quality and capital allocation]
-    
-    DOCUMENT CONTENT:
-    {content}
-    """
-    
-    insights = {}
-    
+    # Import the Hugging Face specific implementation
     try:
-        # Select the model to use
-        model_name = HUGGINGFACE_MODEL_OPTIONS.get(HUGGINGFACE_MODEL, HUGGINGFACE_MODEL_OPTIONS["mistral"])
+        from services.open_source_ai import generate_insights_with_huggingface as hf_generate
         
-        # Set up API call
-        headers = {
-            "Authorization": f"Bearer {os.environ.get('HUGGINGFACE_API_KEY')}",
-            "Content-Type": "application/json"
-        }
+        # For now, we'll just pass the content and model - we'll need to update open_source_ai to handle categories
+        # This would require a more extensive refactoring of that module
+        insights = hf_generate(content, HUGGINGFACE_MODEL)
         
-        # Prepare the API call
-        API_URL = f"https://api-inference.huggingface.co/models/{model_name}"
-        
-        payload = {
-            "inputs": combined_prompt.format(content=optimized_content[:6000]),  # Much smaller content limit for fast performance
-            "parameters": {
-                "max_new_tokens": 800,  # Shorter responses
-                "temperature": 0.2,     # More focused responses
-                "top_p": 0.85,          # More deterministic
-                "return_full_text": False
-            }
-        }
-        
-        # Make the request
-        response = requests.post(API_URL, headers=headers, json=payload)
-        
-        if response.status_code == 200:
-            # Parse the response (format varies by model)
-            try:
-                result = response.json()
+        # Filter to only include the requested categories
+        filtered_insights = {}
+        for category in categories_to_analyze:
+            if category in insights:
+                filtered_insights[category] = insights[category]
+            elif category in PROMPT_TEMPLATES:
+                # If the category is in the prompt templates but not in the insights,
+                # we need to generate it specifically
+                try:
+                    from services.open_source_ai import analyze_with_prompt
+                    prompt = PROMPT_TEMPLATES[category].format(content=content[:10000])  # Limit content size
+                    result = analyze_with_prompt(content, prompt, HUGGINGFACE_MODEL)
+                    filtered_insights[category] = result
+                    logger.info(f"Generated additional {category} insight with Hugging Face")
+                except Exception as e:
+                    logger.error(f"Error generating {category} insight with Hugging Face: {str(e)}")
+                    filtered_insights[category] = f"<p>Unable to generate {category} insight. Error: {str(e)}</p>"
                 
-                # Extract the generated text (format depends on the model)
-                if isinstance(result, list) and len(result) > 0:
-                    if "generated_text" in result[0]:
-                        raw_output = result[0]["generated_text"]
-                    else:
-                        raw_output = result[0]
-                else:
-                    raw_output = result
-                
-                # Extract sections from the HTML
-                raw_html = raw_output if isinstance(raw_output, str) else str(raw_output)
-                
-                # Very basic HTML section extraction
-                if "<h4>Business Summary</h4>" in raw_html:
-                    # The model returned correctly formatted HTML sections
-                    business_start = raw_html.find("<h4>Business Summary</h4>")
-                    moat_start = raw_html.find("<h4>Competitive Moat</h4>")
-                    financial_start = raw_html.find("<h4>Financial Health</h4>")
-                    management_start = raw_html.find("<h4>Management Analysis</h4>")
-                    
-                    insights["business_summary"] = raw_html[business_start:moat_start].strip() if moat_start > 0 else "<p>Unable to extract business summary.</p>"
-                    insights["moat"] = raw_html[moat_start:financial_start].strip() if financial_start > 0 else "<p>Unable to extract competitive moat information.</p>"
-                    insights["financial"] = raw_html[financial_start:management_start].strip() if management_start > 0 else "<p>Unable to extract financial information.</p>"
-                    insights["management"] = raw_html[management_start:].strip() if management_start > 0 else "<p>Unable to extract management information.</p>"
-                else:
-                    # Model didn't format as expected, use the entire output as business summary
-                    logger.warning("Hugging Face model did not return expected HTML sections")
-                    insights["business_summary"] = f"<p>{raw_html}</p>"
-                    insights["moat"] = "<p>The model did not generate properly structured insights.</p>"
-                    insights["financial"] = "<p>The model did not generate properly structured insights.</p>"
-                    insights["management"] = "<p>The model did not generate properly structured insights.</p>"
-                
-                logger.info("Successfully generated insights with Hugging Face")
-                
-            except Exception as parsing_error:
-                logger.error(f"Error parsing Hugging Face response: {str(parsing_error)}")
-                for category in PROMPT_TEMPLATES.keys():
-                    insights[category] = f"<p>Error parsing model response: {str(parsing_error)}</p>"
-        else:
-            logger.error(f"Hugging Face API error: {response.status_code} - {response.text}")
-            for category in PROMPT_TEMPLATES.keys():
-                insights[category] = f"<p>Hugging Face API error: {response.status_code}</p>"
-                
+        return filtered_insights
+    except ImportError:
+        logger.error("Failed to import open_source_ai module")
+        return {category: "<p>Hugging Face integration not available.</p>" for category in categories_to_analyze}
     except Exception as e:
-        logger.error(f"Error calling Hugging Face API: {str(e)}")
-        for category in PROMPT_TEMPLATES.keys():
-            insights[category] = f"<p>Error calling Hugging Face API: {str(e)}</p>"
-    
-    return insights
+        logger.error(f"Error generating insights with Hugging Face: {str(e)}")
+        return {category: f"<p>Hugging Face processing error: {str(e)}</p>" for category in categories_to_analyze}

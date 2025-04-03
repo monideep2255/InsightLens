@@ -73,6 +73,9 @@ def process_10k(cik):
         # Check if we should use demo mode (from URL parameter)
         use_demo_mode = request.args.get('demo_mode') == 'true' or request.args.get('demo') == 'true'
         use_local_processing = request.args.get('local_processing') == 'true'
+        use_buffett_mode = request.args.get('use_buffett_mode') == 'true' or request.args.get('buffett_mode') == 'true'
+        use_biotech_mode = request.args.get('use_biotech_mode') == 'true' or request.args.get('biotech_mode') == 'true'
+        industry_type = request.args.get('industry_type', '')
         
         # If company_name is not provided, try to get it from the SEC API
         if not company_name:
@@ -134,7 +137,10 @@ def process_10k(cik):
             company_name=company_name,
             cik=cik,
             use_demo_mode=use_demo_mode,
-            use_local_processing=use_local_processing
+            use_local_processing=use_local_processing,
+            use_buffett_mode=use_buffett_mode,
+            use_biotech_mode=use_biotech_mode,
+            industry_type=industry_type
         )
         db.session.add(document)
         db.session.commit()

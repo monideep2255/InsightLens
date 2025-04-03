@@ -38,6 +38,43 @@
                         </div>
                     </div>
                     
+                    <!-- Value Investing Lens Options -->
+                    <div class="mb-4 border-top pt-3">
+                        <h6 class="mb-2">Value Investing Lens Options</h6>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="use_buffett_mode" id="buffett-mode">
+                            <label class="form-check-label" for="buffett-mode">
+                                <span class="badge bg-warning text-dark me-1">New</span>
+                                Buffett Analysis Mode
+                            </label>
+                            <small class="d-block text-muted">Analyze through Warren Buffett's investment perspective</small>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="use_biotech_mode" id="biotech-mode">
+                            <label class="form-check-label" for="biotech-mode">
+                                <span class="badge bg-info text-dark me-1">Specialized</span>
+                                Biotech Analysis Mode
+                            </label>
+                            <small class="d-block text-muted">Use specialized analysis for biotech/pharmaceutical companies</small>
+                        </div>
+                        <div class="form-group mt-3">
+                            <label for="industry-type" class="form-label">Industry Type (Optional)</label>
+                            <select class="form-select" id="industry-type" name="industry_type">
+                                <option value="" selected>Auto-detect industry</option>
+                                <option value="tech">Technology</option>
+                                <option value="retail">Retail</option>
+                                <option value="finance">Financial Services</option>
+                                <option value="healthcare">Healthcare</option>
+                                <option value="biotech">Biotech/Pharmaceutical</option>
+                                <option value="manufacturing">Manufacturing</option>
+                                <option value="energy">Energy</option>
+                                <option value="consumer">Consumer Goods</option>
+                                <option value="real_estate">Real Estate</option>
+                            </select>
+                            <small class="form-text text-muted">Selecting an industry helps tailor the analysis</small>
+                        </div>
+                    </div>
+                    
                     <!-- Processing Options (Hidden from regular users) -->
                     <div class="mb-4 border-top pt-3 d-none">
                         <h6 class="mb-2">Processing Options</h6>

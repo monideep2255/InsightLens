@@ -14,6 +14,9 @@ class Document(db.Model):
     use_local_processing = db.Column(db.Boolean, default=False)  # For local rule-based processing
     company_name = db.Column(db.String(255), nullable=True)  # For storing company name
     cik = db.Column(db.String(20), nullable=True)  # For SEC Edgar CIK
+    use_buffett_mode = db.Column(db.Boolean, default=False)  # For Warren Buffett analysis style
+    use_biotech_mode = db.Column(db.Boolean, default=False)  # For scientific/biotech company analysis mode
+    industry_type = db.Column(db.String(64), nullable=True)  # Store the industry for specialized analysis
     insights = db.relationship('Insight', backref='document', lazy=True, cascade="all, delete-orphan")
     
     def __repr__(self):
@@ -23,21 +26,28 @@ class Document(db.Model):
 class Insight(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     document_id = db.Column(db.Integer, db.ForeignKey('document.id'), nullable=False)
-    category = db.Column(db.String(64), nullable=False)  # 'business_summary', 'moat', 'financial', 'management'
+    # Insight categories:
+    # Core insights: 'business_summary', 'moat', 'financial', 'management'
+    # Phase 2 value investing lens: 'moat_analysis', 'red_flags', 'margin_of_safety', 'buffett_analysis', 'biotech_analysis'
+    category = db.Column(db.String(64), nullable=False)
     content = db.Column(db.Text, nullable=False)
+    severity = db.Column(db.String(20), nullable=True)  # For red flags: 'low', 'medium', 'high'
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     
     def __repr__(self):
         return f'<Insight {self.category} for Document {self.document_id}>'
     
     def to_dict(self):
-        return {
+        result = {
             'id': self.id,
             'document_id': self.document_id,
             'category': self.category,
             'content': self.content,
             'created_at': self.created_at.isoformat()
         }
+        if self.severity:
+            result['severity'] = self.severity
+        return result
 
 
 class Processing(db.Model):

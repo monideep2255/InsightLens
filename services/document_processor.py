@@ -8,7 +8,7 @@ from flask import current_app
 from app import db, app
 from models import Document, Insight, Processing, ApiUsage
 from services.pdf_parser import extract_pdf_content
-from services.ai_service import generate_insights
+from services.ai_service import generate_insights, PROMPT_TEMPLATES
 # Import the demo service
 from services.demo_service import generate_demo_insights, perform_local_analysis
 # Import the edgar service if it exists
@@ -50,19 +50,34 @@ def process_document(document_id):
         
         # Check if we should use demo mode
         if document.use_demo_mode:
-            # Use appropriate demo template based on content type or company name
+            # Use appropriate demo template based on content type, company name, or industry type
             company_type = "tech"  # Default
             
-            # Try to guess company type from title or filename
-            doc_text = (document.title or "") + " " + (document.filename or "") + " " + (document.company_name or "")
-            doc_text = doc_text.lower()
-            
-            if any(term in doc_text for term in ["bank", "financial", "insurance", "invest", "capital"]):
-                company_type = "financial"
-            elif any(term in doc_text for term in ["retail", "store", "shop", "consumer"]):
-                company_type = "retail"
-            elif any(term in doc_text for term in ["manufacturing", "industrial", "factory"]):
-                company_type = "manufacturing"
+            # First check if we have an industry type specified explicitly
+            if document.industry_type:
+                if document.industry_type.lower() in ["financial", "banking", "insurance", "investment"]:
+                    company_type = "financial"
+                elif document.industry_type.lower() in ["retail", "consumer", "ecommerce"]:
+                    company_type = "retail"
+                elif document.industry_type.lower() in ["manufacturing", "industrial"]:
+                    company_type = "manufacturing"
+                elif document.industry_type.lower() in ["biotech", "pharmaceutical", "healthcare"]:
+                    company_type = "biotech"
+                elif document.industry_type.lower() in ["technology", "software", "it"]:
+                    company_type = "tech"
+            else:
+                # Try to guess company type from title or filename
+                doc_text = (document.title or "") + " " + (document.filename or "") + " " + (document.company_name or "")
+                doc_text = doc_text.lower()
+                
+                if any(term in doc_text for term in ["bank", "financial", "insurance", "invest", "capital"]):
+                    company_type = "financial"
+                elif any(term in doc_text for term in ["retail", "store", "shop", "consumer"]):
+                    company_type = "retail"
+                elif any(term in doc_text for term in ["manufacturing", "industrial", "factory"]):
+                    company_type = "manufacturing"
+                elif any(term in doc_text for term in ["biotech", "pharma", "drug", "medical", "health"]):
+                    company_type = "biotech"
             
             logger.info(f"Using demo mode with {company_type} template for document {document_id}")
             
@@ -130,9 +145,143 @@ def process_document(document_id):
             else:
                 # Generate insights using AI and track usage
                 ai_start_time = time.time()
-                insights = generate_insights(content)
+                
+                # Start with basic categories
+                categories_to_include = ['business_summary', 'moat', 'financial', 'management']
+                categories_to_exclude = []
+                
+                # Determine additional prompt templates to use based on document options
+                additional_prompts = {}
+                
+                # Add red flags detection for all documents
+                additional_prompts['red_flags'] = True
+                
+                # Add Buffett analysis if requested
+                if document.use_buffett_mode:
+                    additional_prompts['buffett_analysis'] = True
+                    logger.info(f"Using Warren Buffett analysis mode for document {document_id}")
+                
+                # Add biotech analysis if requested or if the industry is detected as biotech
+                if document.use_biotech_mode or (document.industry_type and 
+                    document.industry_type.lower() in ["biotech", "pharmaceutical", "healthcare"]):
+                    additional_prompts['biotech_analysis'] = True
+                    logger.info(f"Using biotech company analysis mode for document {document_id}")
+                
+                # Add or remove categories based on industry type
+                if document.industry_type:
+                    industry = document.industry_type.lower()
+                    
+                    # For financial companies, prioritize financial analysis
+                    if industry in ["financial", "banking", "insurance", "investment"]:
+                        # Add the financial_institutions analysis if available
+                        if 'financial_institutions' in PROMPT_TEMPLATES:
+                            additional_prompts['financial_institutions'] = True
+                            logger.info(f"Adding financial institutions analysis for {industry} company")
+                    
+                    # For retail companies, focus on consumer insights
+                    elif industry in ["retail", "consumer", "ecommerce"]:
+                        # Add the retail_analysis if available
+                        if 'retail_analysis' in PROMPT_TEMPLATES:
+                            additional_prompts['retail_analysis'] = True
+                            logger.info(f"Adding retail analysis for {industry} company")
+                            
+                    # For technology companies, focus on tech moats and innovation
+                    elif industry in ["technology", "software", "it"]:
+                        # Add the tech_analysis if available
+                        if 'tech_analysis' in PROMPT_TEMPLATES:
+                            additional_prompts['tech_analysis'] = True
+                            logger.info(f"Adding technology analysis for {industry} company")
+                
+                # Generate insights with the specialized templates, using the filter categories mechanism
+                insights = generate_insights(
+                    content, 
+                    additional_prompt_templates=additional_prompts,
+                    filter_categories=categories_to_include,
+                    exclude_categories=categories_to_exclude
+                )
+                
                 ai_time = time.time() - ai_start_time
                 logger.info(f"AI insights generated in {ai_time:.2f} seconds")
+                
+                # Note: Now that we're using filtered categories in the generate_insights function,
+                # we don't need the separate code for specialized analysis anymore, since it's all handled
+                # by the additional_prompt_templates parameter and the filter_categories mechanism.
+                # The code below is kept for backward compatibility and will be deprecated in future versions.
+                
+                # Check if we need to manually add analysis for any categories that might have been missed
+                # This can happen if the model doesn't support all the requested categories
+                
+                # Check if Buffett analysis is missing but requested
+                if document.use_buffett_mode and 'buffett_analysis' not in insights:
+                    logger.info(f"Adding missing Buffett-style analysis for document {document_id}")
+                    from services.ai_service import PROMPT_TEMPLATES
+                    buffett_prompt = PROMPT_TEMPLATES['buffett_analysis'].format(content=content)
+                    
+                    if os.environ.get("HUGGINGFACE_API_KEY"):
+                        from services.open_source_ai import analyze_with_prompt
+                        buffett_insight = analyze_with_prompt(content, buffett_prompt)
+                    else:
+                        from services.ai_service import get_openai_client
+                        client = get_openai_client()
+                        response = client.chat.completions.create(
+                            model="gpt-4o",
+                            messages=[
+                                {"role": "system", "content": "You are Warren Buffett analyzing a potential investment."},
+                                {"role": "user", "content": buffett_prompt}
+                            ],
+                            temperature=0.3
+                        )
+                        buffett_insight = response.choices[0].message.content
+                    
+                    insights['buffett_analysis'] = buffett_insight
+                
+                # Check if red flags analysis is missing but requested
+                if 'red_flags' not in insights:
+                    logger.info(f"Adding missing red flags analysis for document {document_id}")
+                    from services.ai_service import PROMPT_TEMPLATES
+                    red_flags_prompt = PROMPT_TEMPLATES['red_flags'].format(content=content)
+                    
+                    if os.environ.get("HUGGINGFACE_API_KEY"):
+                        from services.open_source_ai import analyze_with_prompt
+                        red_flags_insight = analyze_with_prompt(content, red_flags_prompt)
+                    else:
+                        from services.ai_service import get_openai_client
+                        client = get_openai_client()
+                        response = client.chat.completions.create(
+                            model="gpt-4o",
+                            messages=[
+                                {"role": "system", "content": "You are a forensic financial analyst specializing in detecting red flags."},
+                                {"role": "user", "content": red_flags_prompt}
+                            ],
+                            temperature=0.3
+                        )
+                        red_flags_insight = response.choices[0].message.content
+                    
+                    insights['red_flags'] = red_flags_insight
+                
+                # Check if biotech analysis is missing but requested
+                if document.use_biotech_mode and 'biotech_analysis' not in insights:
+                    logger.info(f"Adding missing biotech-specific analysis for document {document_id}")
+                    from services.ai_service import PROMPT_TEMPLATES
+                    biotech_prompt = PROMPT_TEMPLATES['biotech_analysis'].format(content=content)
+                    
+                    if os.environ.get("HUGGINGFACE_API_KEY"):
+                        from services.open_source_ai import analyze_with_prompt
+                        biotech_insight = analyze_with_prompt(content, biotech_prompt)
+                    else:
+                        from services.ai_service import get_openai_client
+                        client = get_openai_client()
+                        response = client.chat.completions.create(
+                            model="gpt-4o",
+                            messages=[
+                                {"role": "system", "content": "You are a specialized analyst evaluating a biotech/pharmaceutical company."},
+                                {"role": "user", "content": biotech_prompt}
+                            ],
+                            temperature=0.3
+                        )
+                        biotech_insight = response.choices[0].message.content
+                    
+                    insights['biotech_analysis'] = biotech_insight
                 
                 # Monitor token usage - this would normally be provided by the API response
                 # Since we don't have direct access to token counts, we'll estimate based on content length

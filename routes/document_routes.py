@@ -22,6 +22,9 @@ def upload_document():
     # Processing options
     use_demo_mode = request.form.get('use_demo_mode') == 'on'
     use_local_processing = request.form.get('use_local_processing') == 'on'
+    use_buffett_mode = request.form.get('use_buffett_mode') == 'on'
+    use_biotech_mode = request.form.get('use_biotech_mode') == 'on'
+    industry_type = request.form.get('industry_type', '').strip()
     company_name = request.form.get('company_name', '').strip()
     
     try:
@@ -38,6 +41,9 @@ def upload_document():
                     content_type='pdf',
                     use_demo_mode=True,
                     use_local_processing=use_local_processing,
+                    use_buffett_mode=use_buffett_mode,
+                    use_biotech_mode=use_biotech_mode,
+                    industry_type=industry_type,
                     company_name=company_name,
                     title=f"Demo: {company_name}" if company_name else "Demo Document"
                 )
@@ -60,6 +66,9 @@ def upload_document():
                     content_type='pdf',
                     use_demo_mode=use_demo_mode,
                     use_local_processing=use_local_processing,
+                    use_buffett_mode=use_buffett_mode,
+                    use_biotech_mode=use_biotech_mode,
+                    industry_type=industry_type,
                     company_name=company_name,
                     title=f"{company_name}" if company_name else filename
                 )
@@ -99,6 +108,9 @@ def upload_document():
                     content_type='edgar',
                     use_demo_mode=True,
                     use_local_processing=use_local_processing,
+                    use_buffett_mode=use_buffett_mode,
+                    use_biotech_mode=use_biotech_mode,
+                    industry_type=industry_type,
                     company_name=company_name,
                     title=f"{company_name} - SEC EDGAR (Demo)" if company_name else f"SEC EDGAR Document ({cik}) - Demo",
                     cik=cik
