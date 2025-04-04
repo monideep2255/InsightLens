@@ -1,5 +1,6 @@
 import datetime
 import json
+import uuid
 from app import db
 
 class Document(db.Model):
@@ -168,3 +169,69 @@ class ApiUsage(db.Model):
             "remaining_budget": monthly_budget - total_cost,
             "total_cost": total_cost
         }
+
+
+class ShareableLink(db.Model):
+    """Model for creating shareable links to document insights"""
+    id = db.Column(db.Integer, primary_key=True)
+    document_id = db.Column(db.Integer, db.ForeignKey('document.id'), nullable=False)
+    token = db.Column(db.String(64), unique=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    expires_at = db.Column(db.DateTime, nullable=True)  # If NULL, link never expires
+    is_active = db.Column(db.Boolean, default=True)
+    name = db.Column(db.String(128), nullable=True)  # Optional name/description for the link
+    
+    # Relationship with Document
+    document = db.relationship('Document', backref=db.backref('shareable_links', lazy=True))
+    
+    def __repr__(self):
+        return f'<ShareableLink {self.token[:8]}... for Document {self.document_id}>'
+    
+    @staticmethod
+    def generate_token():
+        """Generate a unique token for a shareable link"""
+        return uuid.uuid4().hex
+    
+    @staticmethod
+    def create_for_document(document_id, name=None, expires_days=None):
+        """Create a new shareable link for a document
+        
+        Args:
+            document_id (int): ID of the document to share
+            name (str, optional): Name/description for the link
+            expires_days (int, optional): Number of days until link expires
+            
+        Returns:
+            ShareableLink: Newly created shareable link
+        """
+        # Generate a unique token
+        token = ShareableLink.generate_token()
+        
+        # Calculate expiration date if provided
+        expires_at = None
+        if expires_days:
+            expires_at = datetime.datetime.utcnow() + datetime.timedelta(days=expires_days)
+        
+        # Create and save the link
+        link = ShareableLink(
+            document_id=document_id,
+            token=token,
+            name=name,
+            expires_at=expires_at
+        )
+        
+        db.session.add(link)
+        db.session.commit()
+        
+        return link
+    
+    def is_expired(self):
+        """Check if the link has expired"""
+        if not self.expires_at:
+            return False
+        
+        return datetime.datetime.utcnow() > self.expires_at
+    
+    def is_valid(self):
+        """Check if the link is valid (active and not expired)"""
+        return self.is_active and not self.is_expired()

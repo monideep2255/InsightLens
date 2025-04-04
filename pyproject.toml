@@ -23,4 +23,5 @@ dependencies = [
     "diskcache>=5.6.3",
     "concurrent-log-handler>=0.9.25",
     "tqdm>=4.67.1",
+    "reportlab>=4.3.1",
 ]

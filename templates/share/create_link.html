@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-share-alt text-primary me-2"></i>
+                    Create Shareable Link
+                </h4>
+            </div>
+            <div class="card-body">
+                <p class="mb-4">
+                    Create a shareable link to allow others to view the analysis of <strong>{{ document.title or document.filename }}</strong> without requiring a login.
+                </p>
+                
+                <form method="POST" action="{{ url_for('share.create_shareable_link', document_id=document.id) }}">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Link Name (Optional)</label>
+                        <input type="text" class="form-control" id="name" name="name" placeholder="e.g., For Team Review">
+                        <div class="form-text">Add a description to help you identify this link later.</div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="expires_days" class="form-label">Link Expiration</label>
+                        <select class="form-select" id="expires_days" name="expires_days">
+                            <option value="">Never expires</option>
+                            <option value="1">1 day</option>
+                            <option value="7">7 days</option>
+                            <option value="30">30 days</option>
+                            <option value="90">90 days</option>
+                        </select>
+                        <div class="form-text">Set when this link should expire. For sensitive documents, we recommend setting an expiration date.</div>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-link me-2"></i>Create Link
+                        </button>
+                        <a href="{{ url_for('insight.show_insights', document_id=document.id) }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <a href="{{ url_for('share.manage_links', document_id=document.id) }}" class="text-decoration-none">
+                <i class="fas fa-arrow-right me-1"></i>Manage existing shareable links
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

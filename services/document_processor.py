@@ -490,3 +490,45 @@ def save_uploaded_file(file):
     file.save(file_path)
     
     return unique_filename
+
+
+def get_document_content(document):
+    """
+    Retrieve document content based on its type
+    
+    Args:
+        document (Document): Document object from the database
+        
+    Returns:
+        str: Document content, or None if content could not be retrieved
+    """
+    try:
+        if document.content_type == 'pdf':
+            upload_folder = current_app.config['UPLOAD_FOLDER']
+            file_path = os.path.join(upload_folder, document.filename)
+            if not os.path.exists(file_path):
+                logger.error(f"PDF file not found: {file_path}")
+                return None
+            
+            return extract_pdf_content(file_path)
+            
+        elif document.content_type == 'edgar' and EDGAR_SERVICE_AVAILABLE:
+            # If we have a CIK, use that to get the 10-K directly
+            if document.cik:
+                from services.edgar_service import get_latest_10k
+                filing_url = get_latest_10k(document.cik)
+                if not filing_url:
+                    logger.error(f"Could not find 10-K filing for CIK: {document.cik}")
+                    return None
+                return extract_10k_content(filing_url)
+            else:
+                # Otherwise use the URL we were given
+                return extract_10k_content(document.url)
+                
+        else:
+            logger.error(f"Unsupported content type: {document.content_type}")
+            return None
+            
+    except Exception as e:
+        logger.error(f"Error retrieving document content: {str(e)}")
+        return None
