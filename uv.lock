@@ -1536,7 +1536,7 @@ requires-dist = [
     { name = "langchain", specifier = ">=0.3.21" },
     { name = "langchain-community", specifier = ">=0.3.20" },
     { name = "langchain-text-splitters", specifier = ">=0.3.7" },
-    { name = "openai", specifier = ">=1.69.0" },
+    { name = "openai", specifier = ">=1.0.0" },
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "pypdf2", specifier = ">=3.0.1" },
     { name = "routes", specifier = ">=2.5.1" },

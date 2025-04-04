@@ -5,12 +5,13 @@ import requests
 from services.new_prompt_templates import NEW_PROMPT_TEMPLATES
 
 # Optional import of OpenAI
+OPENAI_AVAILABLE = False
 try:
     import openai
     from openai import OpenAI
     OPENAI_AVAILABLE = True
 except ImportError:
-    OPENAI_AVAILABLE = False
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -30,20 +31,7 @@ def get_openai_client():
     key_prefix = api_key[:8] if len(api_key) > 8 else "too_short"
     logger.debug(f"Initializing OpenAI client with API key starting with {key_prefix}...")
     
-    # Directly set the API key in the openai module
-    openai.api_key = api_key
-    
-    # Configuration for organization ID if present
-    organization = os.environ.get("OPENAI_ORGANIZATION")
-    if organization:
-        logger.debug(f"Using organization ID: {organization}")
-        openai.organization = organization
-    
-    # Log version info
-    version_info = getattr(openai, "__version__", "unknown")
-    logger.debug(f"OpenAI SDK version: {version_info}")
-    
-    # Create and return the client using module-level configuration
+    # Create and return the client
     try:
         client = OpenAI(api_key=api_key)
         logger.debug("OpenAI client created successfully")
@@ -256,6 +244,224 @@ def generate_insights(content, additional_prompt_templates=None, filter_categori
             for category in categories_to_analyze
         }
 
+def optimize_content_for_analysis(content, token_budget=8000):
+    """
+    Optimize document content for analysis by fitting it within a token budget
+    
+    Args:
+        content (str): The original document content
+        token_budget (int): Maximum number of tokens to use for the content
+    
+    Returns:
+        str: Optimized content that fits within the token budget
+    """
+    from models import ApiUsage  # Import here to avoid circular imports
+    
+    # Utility function to estimate token count
+    def estimate_token_count(text):
+        # Rough approximation: 1 token ≈ 4 characters for English text
+        return len(text) // 4
+    
+    # Check usage limits to see if we need to be aggressive with optimization
+    usage_status = ApiUsage.check_usage_limits()
+    
+    # Adjust token budget based on current usage
+    if usage_status["usage_percent"] > 90:
+        # We're close to the budget limit, be very conservative
+        token_budget = token_budget // 2
+        logger.warning(f"API usage at {usage_status['usage_percent']:.1f}% of budget, reducing token budget to {token_budget}")
+    elif usage_status["usage_percent"] > 75:
+        # We're approaching the budget limit
+        token_budget = int(token_budget * 0.75)
+        logger.info(f"API usage at {usage_status['usage_percent']:.1f}% of budget, reducing token budget to {token_budget}")
+    
+    # Estimate token count for the full content
+    estimated_tokens = estimate_token_count(content)
+    
+    # If content fits within budget, return it as is
+    if estimated_tokens <= token_budget:
+        logger.info(f"Content fits within token budget ({estimated_tokens}/{token_budget})")
+        return content
+    
+    # If content is too large, we need to optimize it
+    logger.info(f"Content exceeds token budget ({estimated_tokens}/{token_budget}), optimizing")
+    
+    # Strategy 1: If very large content, extract a summary
+    # For large documents, this is more efficient than sending the full text
+    if estimated_tokens > token_budget * 2:
+        # Create a summary of key points from a portion of the document
+        sample_size = min(len(content), token_budget * 4)  # Sample to stay within token limits
+        return create_content_summary(content[:sample_size], token_budget)
+    
+    # Strategy 2: Extract important sections
+    # Take beginning, middle, and end portions
+    beginning_size = token_budget // 3
+    middle_size = token_budget // 3
+    end_size = token_budget - beginning_size - middle_size
+    
+    # Extract sections
+    beginning = content[:beginning_size * 4]  # Convert tokens to approx chars
+    
+    # Only include middle if document is long enough
+    if len(content) > (beginning_size + end_size) * 4 * 2:
+        mid_point = len(content) // 2
+        middle_start = mid_point - (middle_size * 2)
+        middle_end = mid_point + (middle_size * 2)
+        middle = content[max(0, middle_start):min(len(content), middle_end)]
+    else:
+        middle = ""
+    
+    # End section
+    end = content[-end_size * 4:] if len(content) > end_size * 4 else ""
+    
+    # Combine the sections
+    optimized_content = f"""
+    BEGINNING OF DOCUMENT:
+    {beginning}
+    
+    {'MIDDLE OF DOCUMENT:' if middle else ''}
+    {middle}
+    
+    {'END OF DOCUMENT:' if end else ''}
+    {end}
+    """
+    
+    # Final check to ensure we're within budget
+    if estimate_token_count(optimized_content) > token_budget:
+        # If still too large, truncate further
+        return optimized_content[:token_budget * 4]
+    
+    return optimized_content
+
+def create_content_summary(content, token_budget=3000):
+    """
+    Create a summary of the content to fit within token budget
+    
+    Args:
+        content (str): The content to summarize
+        token_budget (int): Maximum number of tokens for the result
+    
+    Returns:
+        str: A summarized version of the content
+    """
+    # Check if we have OpenAI API access for summarization
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        # No OpenAI access, do manual extraction of key sections
+        logger.warning("No OpenAI API key for summarization, using manual extraction")
+        return extract_key_sections(content, token_budget)
+    
+    logger.info("Using OpenAI to create content summary")
+    
+    # Create a summarization prompt
+    summary_prompt = f"""
+    Summarize the key business points in this document in 1000 words or less.
+    Focus on extracting facts about:
+    1. The company's business model and products/services
+    2. Market position and competitive advantages
+    3. Financial metrics mentioned
+    4. Management statements and strategy
+    
+    DOCUMENT CONTENT:
+    {content}
+    """
+    
+    try:
+        # Generate a summary using OpenAI
+        # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
+        # do not change this unless explicitly requested by the user
+        client = get_openai_client()
+        if not client:
+            raise Exception("OpenAI API key not configured or invalid")
+            
+        summary_response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "You are a business analyst who extracts key facts from documents."},
+                {"role": "user", "content": summary_prompt}
+            ],
+            temperature=0.3,
+            max_tokens=1000
+        )
+        
+        # Extract summary
+        summary = summary_response.choices[0].message.content
+        
+        # Track API usage
+        from models import ApiUsage, db
+        api_usage = ApiUsage(
+            api_name="openai",
+            document_id=None,  # This is a preprocessing step, not tied to a document
+            prompt_tokens=len(summary_prompt) // 4,
+            completion_tokens=len(summary) // 4,
+            estimated_cost_usd=ApiUsage.calculate_openai_cost(len(summary_prompt) // 4, len(summary) // 4),
+            model_name="gpt-4o",
+            request_successful=True
+        )
+        db.session.add(api_usage)
+        db.session.commit()
+        
+        return f"DOCUMENT SUMMARY:\n{summary}"
+    
+    except Exception as e:
+        logger.error(f"Error generating summary: {str(e)}")
+        # Fall back to manual extraction
+        return extract_key_sections(content, token_budget)
+
+def extract_key_sections(content, token_budget=3000):
+    """
+    Extract key sections from content based on heuristics
+    
+    Args:
+        content (str): The content to extract from
+        token_budget (int): Maximum number of tokens for the result
+        
+    Returns:
+        str: Extracted key sections
+    """
+    # Approximate character budget (4 chars per token)
+    char_budget = token_budget * 4
+    
+    # Extract common sections of interest
+    sections = []
+    
+    # Look for business description section
+    business_keywords = ["Business Overview", "Company Overview", "Description of Business", "Our Business"]
+    for keyword in business_keywords:
+        if keyword in content:
+            # Extract paragraph after keyword
+            start_idx = content.find(keyword)
+            end_idx = content.find("\n\n", start_idx + len(keyword))
+            if end_idx == -1:
+                end_idx = min(start_idx + 1500, len(content))
+            sections.append(content[start_idx:end_idx])
+    
+    # Look for financial section
+    financial_keywords = ["Financial Overview", "Financial Results", "Financial Highlights"]
+    for keyword in financial_keywords:
+        if keyword in content:
+            start_idx = content.find(keyword)
+            end_idx = content.find("\n\n", start_idx + len(keyword))
+            if end_idx == -1:
+                end_idx = min(start_idx + 1500, len(content))
+            sections.append(content[start_idx:end_idx])
+    
+    # Combine sections
+    extracted_content = "\n\n".join(sections)
+    
+    # If we haven't found key sections or they're too small, add beginning and end
+    if len(extracted_content) < char_budget // 2:
+        beginning = content[:char_budget // 3]
+        end = content[-char_budget // 3:] if len(content) > char_budget // 3 else ""
+        
+        extracted_content = f"{extracted_content}\n\nBEGINNING OF DOCUMENT:\n{beginning}\n\nEND OF DOCUMENT:\n{end}"
+    
+    # Final size check
+    if len(extracted_content) > char_budget:
+        return extracted_content[:char_budget]
+    
+    return extracted_content
+
 def generate_insights_with_openai(content, categories_to_analyze=None):
     """
     Generate insights using OpenAI's API
@@ -267,11 +473,12 @@ def generate_insights_with_openai(content, categories_to_analyze=None):
     # Default categories if none specified
     if categories_to_analyze is None:
         categories_to_analyze = ['business_summary', 'moat', 'financial', 'management']
+    
     # Check for API key on each call, not relying on global variable
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
         logger.error("OPENAI_API_KEY not found in environment variables")
-        return {category: "<p>OpenAI API key not configured.</p>" for category in PROMPT_TEMPLATES.keys()}
+        return {category: "<p>OpenAI API key not configured.</p>" for category in categories_to_analyze}
     
     # Log API key format for debugging (securely)
     key_prefix = api_key[:8] if len(api_key) > 8 else "too_short"
@@ -283,66 +490,20 @@ def generate_insights_with_openai(content, categories_to_analyze=None):
     
     insights = {}
     
-    # Create a more optimized summarized version of the content
-    try:
-        # First, get a condensed version of the content for better efficiency
-        MAX_ORIGINAL_CONTENT = 8000  # Limit initial content size
-        truncated_content = content[:MAX_ORIGINAL_CONTENT]
-        
-        # If content is very large, get a summarized version first
-        if len(content) > MAX_ORIGINAL_CONTENT:
-            logger.info(f"Content is large ({len(content)} chars), creating summary first")
-            # Create a brief summary for the main points of the document
-            summary_prompt = f"""
-            Summarize the key business points in this document in 1000 words or less.
-            Focus on extracting facts about:
-            1. The company's business model and products/services
-            2. Market position and competitive advantages
-            3. Financial metrics mentioned
-            4. Management statements and strategy
-            
-            DOCUMENT CONTENT:
-            {truncated_content}
-            """
-            
-            # Generate a summary first
-            # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
-            # do not change this unless explicitly requested by the user
-            client = get_openai_client()
-            if not client:
-                raise Exception("OpenAI API key not configured or invalid")
-                
-            summary_response = client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": "You are a business analyst who extracts key facts from documents."},
-                    {"role": "user", "content": summary_prompt}
-                ],
-                temperature=0.3,
-                max_tokens=1000
-            )
-            
-            # Extract summary
-            summary = summary_response.choices[0].message.content
-            
-            # Create a combined document with both summary and samples from the original
-            # This gives the AI both a high-level view and specific details
-            content_to_analyze = f"""
-            DOCUMENT SUMMARY:
-            {summary}
-            
-            BEGINNING OF DOCUMENT:
-            {content[:2500]}
-            
-            MIDDLE OF DOCUMENT:
-            {content[len(content)//2-1000:len(content)//2+1000] if len(content) > 5000 else ""}
-            
-            END OF DOCUMENT:
-            {content[-2500:] if len(content) > 5000 else ""}
-            """
-        else:
-            content_to_analyze = truncated_content
+    # Check API usage limits before proceeding
+    from models import ApiUsage  # Import here to avoid circular imports
+    usage_status = ApiUsage.check_usage_limits()
+    if usage_status["usage_percent"] > 95:
+        logger.warning(f"API usage at {usage_status['usage_percent']:.1f}% of budget, refusing to process")
+        return {
+            category: "<p>API usage limit reached. Please try again later or contact administrator.</p>"
+            for category in categories_to_analyze
+        }
     
+    # Optimize the content to reduce token usage
+    optimized_content = optimize_content_for_analysis(content)
+    
+    try:
         # Process only the requested insight categories
         for category in categories_to_analyze:
             # Skip if the category doesn't have a template
@@ -353,7 +514,7 @@ def generate_insights_with_openai(content, categories_to_analyze=None):
             prompt_template = PROMPT_TEMPLATES[category]
             try:
                 # Fill the prompt template with optimized content
-                prompt = prompt_template.format(content=content_to_analyze)
+                prompt = prompt_template.format(content=optimized_content)
                 
                 # Make OpenAI API call
                 # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
@@ -376,10 +537,45 @@ def generate_insights_with_openai(content, categories_to_analyze=None):
                 insight_content = response.choices[0].message.content
                 insights[category] = insight_content
                 
+                # Log API usage
+                try:
+                    from models import ApiUsage, db
+                    api_usage = ApiUsage(
+                        api_name="openai",
+                        document_id=None,  # Will be updated later in document processor
+                        prompt_tokens=len(prompt) // 4,
+                        completion_tokens=len(insight_content) // 4,
+                        estimated_cost_usd=ApiUsage.calculate_openai_cost(len(prompt) // 4, len(insight_content) // 4),
+                        model_name="gpt-4o",
+                        request_successful=True
+                    )
+                    db.session.add(api_usage)
+                    db.session.commit()
+                except Exception as usage_error:
+                    logger.error(f"Error recording API usage: {str(usage_error)}")
+                
                 logger.info(f"Successfully generated {category} insight with OpenAI")
                 
             except Exception as e:
                 logger.error(f"Error generating {category} insight with OpenAI: {str(e)}")
+                # Record failed API usage
+                try:
+                    from models import ApiUsage, db
+                    api_usage = ApiUsage(
+                        api_name="openai",
+                        document_id=None,
+                        prompt_tokens=0,
+                        completion_tokens=0,
+                        estimated_cost_usd=0.0,
+                        model_name="gpt-4o",
+                        request_successful=False,
+                        error_message=str(e)
+                    )
+                    db.session.add(api_usage)
+                    db.session.commit()
+                except Exception as usage_error:
+                    logger.error(f"Error recording failed API usage: {str(usage_error)}")
+                
                 # Provide a fallback message for failed insights
                 insights[category] = f"<p>Unable to generate {category} insight. Error: {str(e)}</p>"
     

@@ -72,6 +72,9 @@ class ApiUsage(db.Model):
     completion_tokens = db.Column(db.Integer, default=0)
     estimated_cost_usd = db.Column(db.Float, default=0.0)
     timestamp = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    model_name = db.Column(db.String(64), nullable=True)  # Store the model name used (gpt-4o, mixtral, etc.)
+    request_successful = db.Column(db.Boolean, default=True)  # Track if the API request was successful
+    error_message = db.Column(db.Text, nullable=True)  # Store any error messages
     
     def __repr__(self):
         return f'<ApiUsage {self.api_name} - Doc {self.document_id} - Cost ${self.estimated_cost_usd:.4f}>'
@@ -92,7 +95,76 @@ class ApiUsage(db.Model):
         return prompt_cost + completion_cost
     
     @staticmethod
+    def calculate_huggingface_cost(prompt_tokens, completion_tokens, model="mistral"):
+        """Calculate the estimated cost for Hugging Face API usage"""
+        # Approximate pricing for Hugging Face Inference API
+        costs = {
+            "mistral": {"prompt": 0.0000025, "completion": 0.0000025},  # per token
+            "llama3": {"prompt": 0.000003, "completion": 0.000003},     # per token
+            "deepseek": {"prompt": 0.000004, "completion": 0.000004}    # per token
+        }
+        
+        model_costs = costs.get(model, costs["mistral"])
+        prompt_cost = prompt_tokens * model_costs["prompt"]
+        completion_cost = completion_tokens * model_costs["completion"]
+        
+        return prompt_cost + completion_cost
+    
+    @staticmethod
     def get_monthly_usage():
         """Get the total API usage for the current month"""
         start_of_month = datetime.datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         return ApiUsage.query.filter(ApiUsage.timestamp >= start_of_month).all()
+    
+    @staticmethod
+    def get_monthly_cost_summary():
+        """Get a summary of API costs for the current month"""
+        start_of_month = datetime.datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        usage = ApiUsage.query.filter(ApiUsage.timestamp >= start_of_month).all()
+        
+        summary = {
+            "total_cost": sum(entry.estimated_cost_usd for entry in usage),
+            "total_requests": len(usage),
+            "by_api": {},
+            "successful_requests": sum(1 for entry in usage if entry.request_successful),
+            "failed_requests": sum(1 for entry in usage if not entry.request_successful)
+        }
+        
+        # Group by API provider
+        for entry in usage:
+            if entry.api_name not in summary["by_api"]:
+                summary["by_api"][entry.api_name] = {
+                    "cost": 0,
+                    "requests": 0,
+                    "prompt_tokens": 0,
+                    "completion_tokens": 0
+                }
+            
+            api_summary = summary["by_api"][entry.api_name]
+            api_summary["cost"] += entry.estimated_cost_usd
+            api_summary["requests"] += 1
+            api_summary["prompt_tokens"] += entry.prompt_tokens
+            api_summary["completion_tokens"] += entry.completion_tokens
+        
+        return summary
+    
+    @staticmethod
+    def check_usage_limits(monthly_budget=20.0):
+        """Check if we are approaching or have exceeded usage limits
+        
+        Returns:
+            dict: Status of API usage containing keys:
+                - within_budget: Boolean indicating if usage is within budget
+                - usage_percent: Percentage of budget used
+                - remaining_budget: Amount of budget remaining
+                - total_cost: Total cost incurred this month
+        """
+        summary = ApiUsage.get_monthly_cost_summary()
+        total_cost = summary["total_cost"]
+        
+        return {
+            "within_budget": total_cost < monthly_budget,
+            "usage_percent": (total_cost / monthly_budget) * 100 if monthly_budget > 0 else 0,
+            "remaining_budget": monthly_budget - total_cost,
+            "total_cost": total_cost
+        }
