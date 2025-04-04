@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+
+{% block title %}Comparison Results - InsightLens{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-3">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('document.index') }}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('comparison.comparison_page') }}">Document Comparison</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Results</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h2 class="card-title mb-0">Documents Being Compared</h2>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for document in documents %}
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        {% if document.title %}
+                                            {{ document.title }}
+                                        {% elif document.filename %}
+                                            {{ document.filename }}
+                                        {% else %}
+                                            Document {{ document.id }}
+                                        {% endif %}
+                                    </h5>
+                                    <p class="card-text">
+                                        <small class="text-muted">Date: {{ document.created_at.strftime('%Y-%m-%d') }}</small>
+                                        {% if document.company_name %}
+                                            <br><small class="text-muted">Company: {{ document.company_name }}</small>
+                                        {% endif %}
+                                    </p>
+                                    <a href="{{ url_for('insight.show_insights', document_id=document.id) }}" class="btn btn-sm btn-outline-secondary">View Original Analysis</a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comparison Results Tabs -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h2 class="card-title mb-0">Comparison Analysis</h2>
+                </div>
+                <div class="card-body">
+                    <!-- Nav tabs -->
+                    <ul class="nav nav-tabs mb-3" id="comparisonTabs" role="tablist">
+                        {% if results.financial_comparison %}
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="financial-tab" data-bs-toggle="tab" data-bs-target="#financial" type="button" role="tab" aria-controls="financial" aria-selected="true">Financial Comparison</button>
+                        </li>
+                        {% endif %}
+                        
+                        {% if results.business_evolution %}
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link {% if not results.financial_comparison %}active{% endif %}" id="business-tab" data-bs-toggle="tab" data-bs-target="#business" type="button" role="tab" aria-controls="business" aria-selected="false">Business Evolution</button>
+                        </li>
+                        {% endif %}
+                        
+                        {% if results.management_changes %}
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link {% if not results.financial_comparison and not results.business_evolution %}active{% endif %}" id="management-tab" data-bs-toggle="tab" data-bs-target="#management" type="button" role="tab" aria-controls="management" aria-selected="false">Management Changes</button>
+                        </li>
+                        {% endif %}
+                        
+                        {% if results.strategic_shifts %}
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link {% if not results.financial_comparison and not results.business_evolution and not results.management_changes %}active{% endif %}" id="strategic-tab" data-bs-toggle="tab" data-bs-target="#strategic" type="button" role="tab" aria-controls="strategic" aria-selected="false">Strategic Shifts</button>
+                        </li>
+                        {% endif %}
+                    </ul>
+                    
+                    <!-- Tab content -->
+                    <div class="tab-content" id="comparisonTabContent">
+                        {% if results.financial_comparison %}
+                        <div class="tab-pane fade show active" id="financial" role="tabpanel" aria-labelledby="financial-tab">
+                            <div class="insight-card">
+                                {{ results.financial_comparison|safe }}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if results.business_evolution %}
+                        <div class="tab-pane fade {% if not results.financial_comparison %}show active{% endif %}" id="business" role="tabpanel" aria-labelledby="business-tab">
+                            <div class="insight-card">
+                                {{ results.business_evolution|safe }}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if results.management_changes %}
+                        <div class="tab-pane fade {% if not results.financial_comparison and not results.business_evolution %}show active{% endif %}" id="management" role="tabpanel" aria-labelledby="management-tab">
+                            <div class="insight-card">
+                                {{ results.management_changes|safe }}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if results.strategic_shifts %}
+                        <div class="tab-pane fade {% if not results.financial_comparison and not results.business_evolution and not results.management_changes %}show active{% endif %}" id="strategic" role="tabpanel" aria-labelledby="strategic-tab">
+                            <div class="insight-card">
+                                {{ results.strategic_shifts|safe }}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

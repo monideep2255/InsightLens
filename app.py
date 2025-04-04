@@ -33,13 +33,14 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB limit
 db.init_app(app)
 
 # Import routes
-from routes import document_routes, insight_routes, edgar_routes, admin_routes
+from routes import document_routes, insight_routes, edgar_routes, admin_routes, comparison_routes
 
 # Register blueprints
 app.register_blueprint(document_routes.bp)
 app.register_blueprint(insight_routes.bp)
 app.register_blueprint(edgar_routes.bp)
 app.register_blueprint(admin_routes.admin_bp)
+app.register_blueprint(comparison_routes.comparison_bp)
 
 with app.app_context():
     # Import models

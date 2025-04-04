@@ -230,6 +230,74 @@ body {
   margin-bottom: 1rem;
 }
 
+/* Document comparison styling */
+.comparison-info {
+  background-color: rgba(var(--bs-info-rgb), 0.1);
+  border-left: 4px solid var(--bs-info);
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.document-comparison-card {
+  transition: all 0.3s ease;
+  margin-bottom: 1.5rem;
+}
+
+.document-comparison-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* Comparison results styling */
+.comparison-results .tab-content {
+  padding: 1.5rem 0;
+}
+
+.comparison-highlight {
+  background-color: rgba(var(--bs-warning-rgb), 0.2);
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+}
+
+/* Style comparison tabs */
+#comparisonTabs .nav-link.active {
+  font-weight: 600;
+  border-bottom: 3px solid var(--bs-primary);
+}
+
+/* Style for comparison data tables */
+.comparison-table {
+  width: 100%;
+  margin-bottom: 1rem;
+  border-collapse: collapse;
+}
+
+.comparison-table th, 
+.comparison-table td {
+  padding: 0.75rem;
+  vertical-align: top;
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.comparison-table thead th {
+  vertical-align: bottom;
+  border-bottom: 2px solid var(--bs-border-color);
+  font-weight: 600;
+}
+
+/* Dark mode specific styles for comparison */
+[data-bs-theme="dark"] .comparison-info {
+  background-color: rgba(13, 202, 240, 0.05);
+}
+
+[data-bs-theme="dark"] .comparison-highlight {
+  background-color: rgba(255, 193, 7, 0.15);
+}
+
+[data-bs-theme="dark"] .comparison-table thead th {
+  border-bottom-color: rgba(255, 255, 255, 0.2);
+}
+
 /* Feature cards for theme support */
 .feature-card {
   transition: all 0.3s ease;
@@ -303,4 +371,71 @@ body {
   .upload-area .fa-3x {
     font-size: 2em;
   }
+}
+/* Document comparison styling */
+.comparison-info {
+  background-color: rgba(var(--bs-info-rgb), 0.1);
+  border-left: 4px solid var(--bs-info);
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.document-comparison-card {
+  transition: all 0.3s ease;
+  margin-bottom: 1.5rem;
+}
+
+.document-comparison-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* Comparison results styling */
+.comparison-results .tab-content {
+  padding: 1.5rem 0;
+}
+
+.comparison-highlight {
+  background-color: rgba(var(--bs-warning-rgb), 0.2);
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+}
+
+/* Style comparison tabs */
+#comparisonTabs .nav-link.active {
+  font-weight: 600;
+  border-bottom: 3px solid var(--bs-primary);
+}
+
+/* Style for comparison data tables */
+.comparison-table {
+  width: 100%;
+  margin-bottom: 1rem;
+  border-collapse: collapse;
+}
+
+.comparison-table th, 
+.comparison-table td {
+  padding: 0.75rem;
+  vertical-align: top;
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.comparison-table thead th {
+  vertical-align: bottom;
+  border-bottom: 2px solid var(--bs-border-color);
+  font-weight: 600;
+}
+
+/* Dark mode specific styles for comparison */
+[data-bs-theme="dark"] .comparison-info {
+  background-color: rgba(13, 202, 240, 0.05);
+}
+
+[data-bs-theme="dark"] .comparison-highlight {
+  background-color: rgba(255, 193, 7, 0.15);
+}
+
+[data-bs-theme="dark"] .comparison-table thead th {
+  border-bottom-color: rgba(255, 255, 255, 0.2);
 }

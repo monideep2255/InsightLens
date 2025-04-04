@@ -95,6 +95,14 @@ except ImportError as e:
     logger.error(f"Error importing new prompt templates: {str(e)}")
     NEW_PROMPT_TEMPLATES = {}
 
+# Import industry-specific templates
+try:
+    from services.industry_templates import INDUSTRY_TEMPLATES
+    logger.info(f"Imported {len(INDUSTRY_TEMPLATES)} industry-specific templates")
+except ImportError as e:
+    logger.error(f"Error importing industry templates: {str(e)}")
+    INDUSTRY_TEMPLATES = {}
+
 # Prompt templates - Base templates
 BASE_PROMPT_TEMPLATES = {
     'business_summary': """
@@ -173,8 +181,8 @@ DOCUMENT CONTENT:
 """
 }
 
-# Combine base templates with new ones
-PROMPT_TEMPLATES = {**BASE_PROMPT_TEMPLATES, **NEW_PROMPT_TEMPLATES}
+# Combine base templates with new ones and industry templates
+PROMPT_TEMPLATES = {**BASE_PROMPT_TEMPLATES, **NEW_PROMPT_TEMPLATES, **INDUSTRY_TEMPLATES}
 
 def generate_insights(content, additional_prompt_templates=None, filter_categories=None, exclude_categories=None):
     """
