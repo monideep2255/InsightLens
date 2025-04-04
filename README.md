@@ -131,29 +131,47 @@ This tool is designed as a research assistant, not a financial advisor. Always p
     ├── create_test_pdf.py     # Utility to create test documents
     ├── routes/                # Web route handlers
     │   ├── __init__.py
-    │   ├── document_routes.py # Document upload and processing routes
-    │   ├── insight_routes.py  # Insight display and status API
-    │   └── edgar_routes.py    # SEC EDGAR search and processing
+    │   ├── admin_routes.py    # Admin dashboard routes
+    │   ├── comparison_routes.py # Document comparison
+    │   ├── document_routes.py # Document upload and processing
+    │   ├── edgar_routes.py    # SEC EDGAR search and processing
+    │   ├── export_routes.py   # PDF export functionality
+    │   ├── insight_routes.py  # Insight display and API
+    │   └── share_routes.py    # Shareable link management
     ├── services/              # Business logic
     │   ├── __init__.py
-    │   ├── ai_service.py      # AI provider interface (OpenAI/Hugging Face)
-    │   ├── cache_service.py   # Content caching for performance
-    │   ├── demo_service.py    # Demo mode without API costs
-    │   ├── document_processor.py # Document processing pipeline
-    │   ├── edgar_service.py   # SEC EDGAR API integration
-    │   ├── open_source_ai.py  # Hugging Face AI integration
-    │   ├── pdf_parser.py      # Advanced PDF extraction
-    │   └── url_parser.py      # Intelligent URL content extraction
+    │   ├── ai_service.py      # AI provider interface
+    │   ├── cache_service.py   # Content caching
+    │   ├── demo_service.py    # Demo mode
+    │   ├── document_comparison.py # Compare documents
+    │   ├── document_processor.py # Processing pipeline
+    │   ├── edgar_service.py   # SEC EDGAR integration
+    │   ├── industry_templates.py # Industry-specific analysis
+    │   ├── new_prompt_templates.py # Phase 2 prompts
+    │   ├── open_source_ai.py  # Hugging Face integration
+    │   ├── pdf_export.py      # PDF generation
+    │   ├── pdf_parser.py      # PDF extraction
+    │   └── url_parser.py      # URL content extraction
     ├── static/
     │   ├── css/
     │   │   └── custom.css     # Custom styling
+    │   ├── exports/          # Generated PDF exports
     │   └── js/
     │       └── app.js         # Frontend functionality
     ├── templates/             # HTML templates
-    │   ├── base.html          # Base template with layout
-    │   ├── index.html         # Homepage/upload form
-    │   ├── insights.html      # Insight display page
-    │   └── edgar_search.html  # SEC search results
+    │   ├── admin/
+    │   │   └── api_usage.html # API usage dashboard
+    │   ├── share/
+    │   │   ├── create_link.html
+    │   │   ├── expired.html
+    │   │   ├── manage_links.html
+    │   │   └── shared_insights.html
+    │   ├── base.html
+    │   ├── comparison.html
+    │   ├── comparison_results.html
+    │   ├── edgar_search.html
+    │   ├── index.html
+    │   └── insights.html
     ├── uploads/               # User file uploads
     └── cache/                 # Persistent cache storage
 ```
