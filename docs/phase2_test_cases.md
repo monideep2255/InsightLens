@@ -148,6 +148,42 @@ This document outlines the testing procedures for the InsightLens application, w
   2. Access the admin dashboard to view API usage statistics
 - **Expected Result**: System accurately tracks and displays token usage and cost information
 
+## 7. Quick 10-K Access Test
+1. Navigate to the home page
+2. In the "Quick 10-K Access" section, click on one of the tech giants (e.g., Apple or Microsoft)
+3. Wait for analysis to complete (30-60 seconds)
+4. Verify both new analysis sections appear:
+   - Enhanced Moat Analysis
+   - Margin of Safety
+
+## 8. SEC EDGAR Search for Different Industries
+1. Navigate to the home page
+2. Click on "Search SEC EDGAR"
+3. Search for companies in different sectors:
+   - Financial services: "JPMorgan Chase" or "Goldman Sachs"
+   - Consumer goods: "Coca-Cola" or "Procter & Gamble"
+   - Healthcare: "Johnson & Johnson" or "Pfizer"
+4. Verify industry-specific insights in the new analysis sections
+
+## 9. Biotech Mode Testing
+1. Navigate to the home page
+2. Click on "Search SEC EDGAR"
+3. Search for a biotech company (e.g., "Vertex Pharmaceuticals" or "Moderna")
+4. Check the "Biotech Analysis Mode" checkbox before processing
+5. Verify all specialized analyses appear:
+   - Enhanced Moat Analysis
+   - Margin of Safety
+   - Biotech Analysis
+
+## 10. Buffett Mode Testing
+1. Navigate to the home page
+2. Click on "Search SEC EDGAR"
+3. Search for a company Warren Buffett might analyze (e.g., "Coca-Cola" or "American Express")
+4. Check the "Would Buffett Invest?" checkbox before processing
+5. Verify all relevant sections appear:
+   - Enhanced Moat Analysis
+   - Margin of Safety
+   - Buffett's Perspective
 
 ## Test Execution Instructions
 
