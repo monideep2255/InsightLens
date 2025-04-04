@@ -64,6 +64,52 @@ This tool is designed as a research assistant, not a financial advisor. Always p
    - Improved styling consistency between light/dark modes
    - Enhanced Research Methods card styling in both themes
 
+### Phase 2 Core Features
+1. **Red Flag Detection**
+   - Analysis to identify potential warning signs in SEC filings
+   - Severity indicators for risk assessment (low, medium, high)
+
+2. **"Would Buffett Invest?" Analysis**
+   - Specialized analysis based on Warren Buffett's investment criteria
+   - Assessment of value investment principles alignment
+
+3. **Biotech Analysis Mode**
+   - Specialized analysis for biotech/pharmaceutical companies
+   - Pipeline analysis, regulatory approvals, and clinical trial progress
+
+4. **Enhanced Moat Analysis**
+   - Deeper competitive advantage analysis
+   - Quantifiable assessment of moat strength
+   - Specific competitive advantage identification
+
+5. **Margin of Safety Commentary**
+   - Automated price and value assessment
+   - Fundamental analysis-based guidance
+   - Safety margin evaluation
+
+### Phase 2 Technical Features
+1. **API Cost Management**
+   - Token usage tracking
+   - Monthly budget monitoring and alerts
+   - Admin usage statistics dashboard
+
+2. **Industry-Specific Analysis**
+   - Specialized templates for Technology, Financial Services, Healthcare/Biotech, and Retail
+   - Industry-specific metrics and considerations
+
+3. **Document Comparison**
+   - Compare company documents over time
+   - Track business model and financial evolution
+
+4. **Export & Sharing**
+   - PDF export with professional formatting
+   - Shareable analysis links with expiration dates
+   - Link management interface
+
+5. **Insight Regeneration**
+   - Ability to regenerate individual insight sections
+   - Targeted refinement capabilities
+
 ## Technical Stack
 
 - **Backend**: Python with Flask
