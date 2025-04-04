@@ -260,3 +260,42 @@ Key Benefits of Replit Deployment:
 - Integrated deployment monitoring
 - Easy scaling capabilities
 - Zero-configuration PostgreSQL database
+
+### Alternative Deployment Options
+
+1. **Traditional Server Deployment**
+   ```bash
+   # Install dependencies
+   pip install -r sample_requirements.txt
+
+   # Set up environment variables
+   export FLASK_SECRET_KEY=your_secret_key
+   export DATABASE_URL=postgresql://username:password@localhost:5432/insightlens
+
+   # Initialize database
+   python recreate_db.py
+
+   # Run with Gunicorn
+   gunicorn --bind 0.0.0.0:5000 --workers 4 main:app
+   ```
+
+2. **Docker Deployment**
+   ```bash
+   # Build the Docker image
+   docker compose -f docker-compose.sample.yml build
+
+   # Start the services
+   docker compose -f docker-compose.sample.yml up -d
+   ```
+
+   The application will be available at http://localhost:5000
+
+3. **Production Considerations**
+   - Use a production-grade database
+   - Configure proper logging
+   - Set up monitoring
+   - Implement backup strategies
+   - Use HTTPS in production
+   - Consider using a reverse proxy (nginx/Apache)
+
+For most users, we recommend using Replit's deployment options for the best development experience and easiest maintenance.
