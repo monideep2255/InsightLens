@@ -75,28 +75,56 @@ def generate_insights_with_huggingface(content, model_name="mistral"):
         response.raise_for_status()
         
         # Parse the response - format varies by model
-        result = response.json()
-        
-        # Extract the generated text (format depends on the model)
-        if isinstance(result, list) and len(result) > 0:
-            if "generated_text" in result[0]:
-                raw_output = result[0]["generated_text"]
+        try:
+            result = response.json()
+            
+            # Extract the generated text (format depends on the model)
+            if isinstance(result, list) and len(result) > 0:
+                if isinstance(result[0], dict) and "generated_text" in result[0]:
+                    raw_output = result[0]["generated_text"]
+                elif isinstance(result[0], str):
+                    raw_output = result[0]
+                else:
+                    # Convert unknown object to string representation
+                    raw_output = str(result[0])
+            elif isinstance(result, dict) and "generated_text" in result:
+                raw_output = result["generated_text"]
+            elif isinstance(result, str):
+                raw_output = result
             else:
-                raw_output = result[0]
-        else:
-            raw_output = result
+                # Convert unknown object to string representation
+                raw_output = str(result)
+        except ValueError as json_error:
+            # If the response isn't valid JSON, use the raw text
+            logger.warning(f"Failed to parse JSON response: {str(json_error)}")
+            raw_output = response.text
         
         # Extract JSON content
         try:
-            # Try to find JSON in the response
-            start_idx = raw_output.find('{')
-            end_idx = raw_output.rfind('}') + 1
-            if start_idx >= 0 and end_idx > start_idx:
-                json_str = raw_output[start_idx:end_idx]
-                insights_data = json.loads(json_str)
+            # Check if raw_output is a string before trying to find JSON in it
+            if isinstance(raw_output, str):
+                start_idx = raw_output.find('{')
+                end_idx = raw_output.rfind('}') + 1
+                
+                if start_idx >= 0 and end_idx > start_idx:
+                    json_str = raw_output[start_idx:end_idx]
+                    try:
+                        insights_data = json.loads(json_str)
+                    except json.JSONDecodeError:
+                        # If the extracted JSON string is invalid, try to parse the entire response
+                        logger.warning("Could not parse extracted JSON string, trying entire response")
+                        insights_data = json.loads(raw_output)
+                else:
+                    # Fallback: try to parse entire response as JSON
+                    insights_data = json.loads(raw_output)
+            elif isinstance(raw_output, dict):
+                # If it's already a dict, use it directly
+                insights_data = raw_output
             else:
-                # Fallback: try to parse entire response as JSON
-                insights_data = json.loads(raw_output)
+                # Convert to string and then try to parse as JSON
+                raw_output_str = str(raw_output)
+                logger.warning(f"Unexpected type for raw_output: {type(raw_output)}. Converting to string.")
+                insights_data = json.loads(raw_output_str)
             
             # Ensure all required categories exist and convert any nested dictionaries to strings
             insights = {}
@@ -194,31 +222,115 @@ def analyze_with_prompt(content, prompt_template, model_name="mistral"):
         }
     }
     
-    try:
-        response = requests.post(API_URL, headers=headers, json=payload)
-        response.raise_for_status()
-        
-        # Parse the response - format varies by model
-        result = response.json()
-        
-        # Extract the generated text (format depends on the model)
-        if isinstance(result, list) and len(result) > 0:
-            if "generated_text" in result[0]:
-                raw_output = result[0]["generated_text"]
-            else:
-                raw_output = result[0]
-        else:
-            raw_output = result
+    # Implement a retry mechanism with exponential backoff
+    max_retries = 2
+    backoff_time = 1  # Start with 1 second
+    
+    for retry in range(max_retries + 1):
+        try:
+            # Add timeout to avoid hanging requests
+            response = requests.post(API_URL, headers=headers, json=payload, timeout=30)
+            response.raise_for_status()
             
-        # Check if the result contains HTML, if not, wrap it in paragraph tags
-        if "<h" in raw_output or "<p>" in raw_output:
-            return raw_output
-        else:
-            return f"<p>{raw_output}</p>"
+            # Parse the response - format varies by model
+            try:
+                result = response.json()
+                
+                # Extract the generated text (format depends on the model)
+                if isinstance(result, list) and len(result) > 0:
+                    if isinstance(result[0], dict) and "generated_text" in result[0]:
+                        raw_output = result[0]["generated_text"]
+                    elif isinstance(result[0], str):
+                        raw_output = result[0]
+                    else:
+                        # Convert unknown object to string representation
+                        raw_output = str(result[0])
+                elif isinstance(result, dict) and "generated_text" in result:
+                    raw_output = result["generated_text"]
+                elif isinstance(result, str):
+                    raw_output = result
+                else:
+                    # Convert unknown object to string representation
+                    raw_output = str(result)
+            except ValueError as json_error:
+                # If the response isn't valid JSON, use the raw text
+                logger.warning(f"Failed to parse JSON response: {str(json_error)}")
+                raw_output = response.text
+            
+            # Check for model-specific error messages in the output
+            error_indicators = ["error", "invalid", "failed", "quota exceeded", "rate limit"]
+            if isinstance(raw_output, str) and any(indicator in raw_output.lower() for indicator in error_indicators):
+                logger.warning(f"Possible error in model output: {raw_output[:100]}...")
+                if retry < max_retries:
+                    logger.info(f"Retrying due to error in model output (attempt {retry+1}/{max_retries+1})")
+                    import time
+                    time.sleep(backoff_time)
+                    backoff_time *= 2
+                    continue
+            
+            # Check if the result contains HTML, if not, wrap it in paragraph tags
+            if "<h" in raw_output or "<p>" in raw_output:
+                return raw_output
+            else:
+                return f"<p>{raw_output}</p>"
+            
+        except requests.exceptions.Timeout:
+            logger.warning(f"Request timeout on attempt {retry+1}/{max_retries+1}")
+            if retry < max_retries:
+                import time
+                time.sleep(backoff_time)
+                backoff_time *= 2
+                continue
+            else:
+                logger.error("All retries failed due to timeout")
+                return "<p>Error: The AI service took too long to respond. Please try again later.</p>"
+                
+        except requests.exceptions.HTTPError as e:
+            status_code = e.response.status_code if hasattr(e, 'response') else 0
+            logger.warning(f"HTTP error {status_code} on attempt {retry+1}/{max_retries+1}: {str(e)}")
+            
+            # Check if it's a retryable error (server errors, rate limits)
+            if ((isinstance(status_code, int) and (500 <= status_code <= 599 or status_code == 429)) 
+                and retry < max_retries):
+                import time
+                wait_time = backoff_time
+                
+                # If we get a rate limit response, use the Retry-After header if available
+                if status_code == 429 and hasattr(e, 'response') and 'Retry-After' in e.response.headers:
+                    try:
+                        wait_time = int(e.response.headers['Retry-After'])
+                        logger.info(f"Using Retry-After header: waiting {wait_time} seconds")
+                    except (ValueError, TypeError):
+                        pass
+                
+                logger.info(f"Retrying in {wait_time} seconds")
+                time.sleep(wait_time)
+                backoff_time *= 2
+                continue
+            else:
+                # Non-retryable error or out of retries
+                logger.error(f"HTTP error {status_code}: {str(e)}")
+                error_type = "rate limit exceeded" if status_code == 429 else f"HTTP error {status_code}"
+                return f"<p>Error calling AI service: {error_type}. Please try again later.</p>"
         
-    except requests.exceptions.RequestException as e:
-        logger.error(f"API request error during custom prompt analysis: {e}")
-        return f"<p>Error calling AI service: {str(e)}</p>"
-    except Exception as e:
-        logger.error(f"Error in custom prompt analysis: {e}")
-        return f"<p>Error processing analysis: {str(e)}</p>"
+        except requests.exceptions.RequestException as e:
+            logger.error(f"API request error during custom prompt analysis: {e}")
+            
+            # Check if it's a connection error that might be temporary
+            is_connection_error = any(term in str(e).lower() for term in ["connection", "network", "dns", "timeout", "read timed out"])
+            if is_connection_error and retry < max_retries:
+                logger.info(f"Connection error, retrying (attempt {retry+1}/{max_retries+1})")
+                import time
+                time.sleep(backoff_time)
+                backoff_time *= 2
+                continue
+            
+            return f"<p>Error calling AI service: {str(e)}. Please try again later.</p>"
+        
+        except Exception as unexpected_error:
+            # For any other unexpected errors
+            logger.error(f"Unexpected error during API request: {str(unexpected_error)}")
+            return f"<p>An unexpected error occurred while processing your request. Please try again later.</p>"
+    
+    # If we get here, all retries failed
+    return "<p>Unable to get a valid response from the AI service after multiple attempts. Please try again later.</p>"

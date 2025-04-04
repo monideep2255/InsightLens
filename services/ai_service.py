@@ -20,8 +20,16 @@ AI_MODEL_TYPE = os.environ.get("AI_MODEL_TYPE", "huggingface").lower()  # Defaul
 HUGGINGFACE_MODEL = os.environ.get("HUGGINGFACE_MODEL", "mistral")  # Default Hugging Face model
 
 # Initialize OpenAI client functions
-def get_openai_client():
-    """Get an OpenAI client with the latest API key from environment variables"""
+def get_openai_client(validate=True):
+    """
+    Get an OpenAI client with the latest API key from environment variables
+    
+    Args:
+        validate (bool): Whether to validate the API key with a test request
+        
+    Returns:
+        OpenAI client or None if unavailable/invalid
+    """
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
         logger.warning("OPENAI_API_KEY not found in environment variables")
@@ -34,6 +42,26 @@ def get_openai_client():
     # Create and return the client
     try:
         client = OpenAI(api_key=api_key)
+        
+        # Optionally validate the client with a simple request
+        if validate:
+            try:
+                # Make a lightweight request to validate the API key
+                models = client.models.list(limit=1)
+                logger.info("OpenAI API key validated successfully")
+            except Exception as validation_error:
+                logger.error(f"OpenAI API key validation failed: {str(validation_error)}")
+                
+                # Check for specific error types
+                error_msg = str(validation_error).lower()
+                if "authentication" in error_msg or "invalid" in error_msg or "unauthorized" in error_msg:
+                    logger.critical("OpenAI API key appears to be invalid - please check your API key")
+                    return None
+                elif "rate limit" in error_msg or "ratelimit" in error_msg:
+                    logger.warning("OpenAI API rate limit exceeded. Will proceed with client but requests may fail.")
+                elif "timeout" in error_msg or "connection" in error_msg:
+                    logger.warning("OpenAI API connection issue. Will proceed with client but requests may be slow.")
+        
         logger.debug("OpenAI client created successfully")
         return client
     except Exception as e:
@@ -521,21 +549,85 @@ def generate_insights_with_openai(content, categories_to_analyze=None):
                 # do not change this unless explicitly requested by the user
                 client = get_openai_client()
                 if not client:
-                    raise Exception("OpenAI API key not configured or invalid")
+                    error_msg = "OpenAI API key not configured or invalid"
+                    logger.error(error_msg)
                     
-                response = client.chat.completions.create(
-                    model="gpt-4o",
-                    messages=[
-                        {"role": "system", "content": "You are an AI assistant that helps analyze company documents using value investing principles. Your answers should be concise and factual."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=0.3,  # Lower temperature for more focused responses
-                    max_tokens=800    # Shorter responses
-                )
+                    # Check if Hugging Face is available as fallback
+                    if os.environ.get("HUGGINGFACE_API_KEY"):
+                        logger.info("Attempting to fall back to Hugging Face for this category")
+                        try:
+                            from services.open_source_ai import analyze_with_prompt
+                            fallback_result = analyze_with_prompt(optimized_content, prompt_template.format(content=optimized_content[:10000]))
+                            if "<p>Error calling AI service" not in fallback_result:
+                                logger.info(f"Successfully used Hugging Face as fallback for {category}")
+                                insights[category] = fallback_result
+                                continue
+                        except Exception as hf_error:
+                            logger.error(f"Hugging Face fallback also failed: {str(hf_error)}")
+                    
+                    raise Exception(error_msg)
                 
-                # Extract the insight content from response
-                insight_content = response.choices[0].message.content
-                insights[category] = insight_content
+                # Implement a retry mechanism for transient errors
+                max_retries = 2
+                backoff_time = 1  # Start with 1 second backoff
+                
+                for retry in range(max_retries + 1):
+                    try:
+                        response = client.chat.completions.create(
+                            model="gpt-4o",
+                            messages=[
+                                {"role": "system", "content": "You are an AI assistant that helps analyze company documents using value investing principles. Your answers should be concise and factual."},
+                                {"role": "user", "content": prompt}
+                            ],
+                            temperature=0.3,  # Lower temperature for more focused responses
+                            max_tokens=800    # Shorter responses
+                        )
+                        
+                        # Extract the insight content from response
+                        insight_content = response.choices[0].message.content
+                        insights[category] = insight_content
+                        
+                        # If we get here, the request was successful, break out of retry loop
+                        if retry > 0:
+                            logger.info(f"Successfully completed request for {category} after {retry} retries")
+                        break
+                        
+                    except Exception as retry_error:
+                        error_str = str(retry_error).lower()
+                        
+                        # Check if this is a retryable error
+                        is_retryable = any(term in error_str for term in 
+                                            ["timeout", "rate limit", "ratelimit", "capacity", 
+                                             "overloaded", "busy", "connection", "network", "500"])
+                        
+                        if retry < max_retries and is_retryable:
+                            logger.warning(f"Retryable error on attempt {retry+1}/{max_retries+1}: {str(retry_error)}")
+                            
+                            # Exponential backoff
+                            import time
+                            time.sleep(backoff_time)
+                            backoff_time *= 2  # Double the backoff time for next retry
+                            
+                            continue
+                        else:
+                            # Either we've exhausted retries or it's a non-retryable error
+                            if retry == max_retries:
+                                logger.error(f"Failed after {max_retries} retries: {str(retry_error)}")
+                            else:
+                                logger.error(f"Non-retryable error: {str(retry_error)}")
+                            
+                            # Try to extract more specific error info
+                            error_type = "Unknown error"
+                            if "authentication" in error_str or "auth" in error_str:
+                                error_type = "Authentication error: check your API key"
+                            elif "rate limit" in error_str:
+                                error_type = "Rate limit exceeded"
+                            elif "quota" in error_str or "billing" in error_str:
+                                error_type = "Quota exceeded: check billing"
+                            elif "invalid" in error_str and "model" in error_str:
+                                error_type = "Invalid model: GPT-4o may not be available"
+                            
+                            raise Exception(f"{error_type}: {str(retry_error)}")
                 
                 # Log API usage
                 try:
@@ -595,22 +687,58 @@ def generate_insights_with_openai(content, categories_to_analyze=None):
                 
                 # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
                 # do not change this unless explicitly requested by the user
-                client = get_openai_client()
+                client = get_openai_client(validate=False)  # Skip validation for fallback to reduce API calls
                 if not client:
-                    raise Exception("OpenAI API key not configured or invalid")
+                    # Check if Hugging Face is available as fallback
+                    if os.environ.get("HUGGINGFACE_API_KEY"):
+                        logger.info(f"Attempting to use Hugging Face as final fallback for {category}")
+                        try:
+                            from services.open_source_ai import analyze_with_prompt
+                            fallback_result = analyze_with_prompt(content[:7000], prompt_template.format(content=content[:7000]))
+                            if "<p>Error calling AI service" not in fallback_result:
+                                logger.info(f"Successfully used Hugging Face as final fallback for {category}")
+                                insights[category] = fallback_result
+                                continue
+                        except Exception as hf_error:
+                            logger.error(f"Hugging Face fallback also failed: {str(hf_error)}")
                     
-                response = client.chat.completions.create(
-                    model="gpt-4o",
-                    messages=[
-                        {"role": "system", "content": "You are an AI assistant that helps analyze company documents using value investing principles."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=0.3,
-                    max_tokens=800
-                )
+                    raise Exception("OpenAI API key not configured or invalid")
                 
-                insights[category] = response.choices[0].message.content
-                logger.info(f"Generated {category} insight with fallback method")
+                # Use a simplified retry mechanism for the fallback path
+                max_retries = 1
+                try:
+                    response = client.chat.completions.create(
+                        model="gpt-4o",
+                        messages=[
+                            {"role": "system", "content": "You are an AI assistant that helps analyze company documents using value investing principles."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        temperature=0.3,
+                        max_tokens=800
+                    )
+                    
+                    insights[category] = response.choices[0].message.content
+                    logger.info(f"Generated {category} insight with fallback method")
+                
+                except Exception as e:
+                    logger.error(f"OpenAI fallback failed: {str(e)}")
+                    
+                    # If OpenAI fallback failed, try Hugging Face as a final resort
+                    if os.environ.get("HUGGINGFACE_API_KEY"):
+                        logger.info(f"Attempting emergency Hugging Face fallback for {category}")
+                        try:
+                            from services.open_source_ai import analyze_with_prompt
+                            fallback_result = analyze_with_prompt(content[:7000], prompt_template.format(content=content[:7000]))
+                            if "<p>Error calling AI service" not in fallback_result:
+                                logger.info(f"Successfully used Hugging Face as emergency fallback for {category}")
+                                insights[category] = fallback_result
+                            else:
+                                raise Exception("Hugging Face emergency fallback also failed")
+                        except Exception as hf_error:
+                            logger.error(f"Hugging Face emergency fallback failed: {str(hf_error)}")
+                            insights[category] = f"<p>Unable to generate {category} insight after multiple fallback attempts. Please try again later.</p>"
+                    else:
+                        insights[category] = f"<p>Unable to generate {category} insight. Error: {str(e)}</p>"
                 
             except Exception as e2:
                 logger.error(f"Error in fallback generation for {category}: {str(e2)}")
