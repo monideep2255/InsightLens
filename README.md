@@ -110,6 +110,14 @@ This tool is designed as a research assistant, not a financial advisor. Always p
    - Ability to regenerate individual insight sections
    - Targeted refinement capabilities
 
+## Future Phases
+#### Phase 3: [Feature Description]
+- Briefly describe the intended features or improvements planned for Phase 3.
+#### Phase 4: [Feature Description]
+- Briefly describe the intended features or improvements planned for Phase 4.
+#### Phase 5: [Feature Description]
+- Briefly describe the intended features or improvements planned for Phase 5.
+
 ## Technical Stack
 
 - **Backend**: Python with Flask
