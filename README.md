@@ -8,7 +8,7 @@ This tool is designed as a research assistant, not a financial advisor. Always p
 
 ## Currently Implemented Features
 
-### Phase 1 Core
+### ✨ Phase 1: Upload + Summarize (MVP Core)
 1. **Multiple Research Methods**
    - SEC EDGAR API integration for 10-K filings
    - PDF file upload with drag-and-drop support
@@ -64,7 +64,7 @@ This tool is designed as a research assistant, not a financial advisor. Always p
    - Improved styling consistency between light/dark modes
    - Enhanced Research Methods card styling in both themes
 
-### Phase 2 Core Features
+### ⚖️ Phase 2: Value Investing Lens
 1. **Red Flag Detection**
    - Analysis to identify potential warning signs in SEC filings
    - Severity indicators for risk assessment (low, medium, high)
