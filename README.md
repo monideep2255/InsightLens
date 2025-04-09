@@ -65,13 +65,14 @@ Each feature underwent thorough testing:
 This systematic approach, combining thorough planning with iterative development and testing, has resulted in a robust tool that effectively merges value investing principles with modern AI capabilities.
 
 ## Current UI State (Phase 2)
+*Last Updated: April 9, 2025*
 
 ### Dark Mode
-![InsightLens Dark Mode](docs/phase2_screenshots/Phase%202%20dark%20mode.png)
+<img src="docs/phase2_screenshots/Phase%202%20dark%20mode.png" alt="InsightLens Dark Mode" width="800"/>
 *Dark mode interface showing the main analysis page with value investing and biotech analysis options*
 
 ### Light Mode
-![InsightLens Light Mode](docs/phase2_screenshots/Phase%202%20light%20mode.png)
+<img src="docs/phase2_screenshots/Phase%202%20light%20mode.png" alt="InsightLens Light Mode" width="800"/>
 *Light mode interface demonstrating the clean, minimal design with all analysis features*
 
 ## Legal Notice
