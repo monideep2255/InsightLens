@@ -67,11 +67,11 @@ This systematic approach, combining thorough planning with iterative development
 ## Current UI State (Phase 2)
 
 ### Dark Mode
-![InsightLens Dark Mode](docs/phase2_screenshots/dark_mode.png)
+![InsightLens Dark Mode](docs/phase2_screenshots/Phase 2 dark mode.png)
 *Dark mode interface showing the main analysis page with value investing and biotech analysis options*
 
 ### Light Mode
-![InsightLens Light Mode](docs/phase2_screenshots/light_mode.png)
+![InsightLens Light Mode](docs/phase2_screenshots/Phase 2 light_mode.png)
 *Light mode interface demonstrating the clean, minimal design with all analysis features*
 
 ## Legal Notice
