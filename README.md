@@ -111,12 +111,34 @@ This tool is designed as a research assistant, not a financial advisor. Always p
    - Targeted refinement capabilities
 
 ## Future Phases
-#### Phase 3: [Feature Description]
-- Briefly describe the intended features or improvements planned for Phase 3.
-#### Phase 4: [Feature Description]
-- Briefly describe the intended features or improvements planned for Phase 4.
-#### Phase 5: [Feature Description]
-- Briefly describe the intended features or improvements planned for Phase 5.
+
+### 📊 Phase 3: Scoring & Evaluation Framework
+This phase adds a scoring interface. Users can evaluate companies via sliders and checklists, save results, and export investment memos. This helps apply a consistent methodology across different companies.
+
+Key Features:
+- Interactive scorecard (editable sliders/checklist)
+- Save & tag companies
+- Exportable insights/memos
+- Internal dashboard with history
+
+### 🧠 Phase 4: Augmented Research & Comparison
+This phase enhances the assistant with autonomous research capabilities. AI agents can fetch data from external sources, monitor changes, and generate comparisons between companies to support deeper strategic decisions.
+
+Key Features:
+- Browser AI agents to fetch additional info
+- Public data sourcing (Crunchbase, PubMed, etc.)
+- Smart company comparison ("Compare A vs. B")
+- Alerts for changes/updates
+
+### 🧾 Phase 5: AI-Powered Recommendation Engine
+In this phase, the assistant synthesizes all previous analysis (financial, strategic, scientific, red flags, scoring) to produce an overall investment recommendation.
+
+Key Features:
+- Generate AI-based summary recommendation: "Strong Consideration", "Needs Further Review", or "Pass"
+- Justification paragraph explaining the decision based on prior insight cards
+- Optional toggle: Value Investor Lens vs General Investor Lens
+- Include scoring thresholds that influence final output (e.g., red flag presence reduces score weight)
+- Allow user overrides with notes for manual adjustments
 
 ## Technical Stack
 
