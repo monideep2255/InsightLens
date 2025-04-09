@@ -2,6 +2,68 @@
 
 InsightLens is an AI-powered research assistant designed to help users evaluate companies through the lens of value investing principles (Benjamin Graham/Warren Buffett approach). The system processes financial reports from the SEC EDGAR database or uploaded PDF documents and generates structured insight cards with analysis on various aspects of a company, including Business Summary, Moat & Edge, Basic Financial Health, and Management Snapshot. Featuring direct access to 10-K filings for the "Magnificent 7" tech companies and robust caching for efficient API usage.
 
+## Project Approach & Development Journey
+
+### Initial Planning & Documentation
+The project began with comprehensive planning using a Product Requirements Document (PRD) and Technical Specification. This foundational work established:
+
+1. **Background Research**: Explored value investing principles (Graham/Buffett) and identified gaps in existing tools.
+2. **Problem Definition**: Recognized the need for an AI-powered tool to streamline document analysis with value investing principles.
+3. **User Stories**: Created detailed personas (investors, researchers, students) to guide feature development.
+4. **Feature Roadmap**: Structured development into 5 distinct phases:
+   - Phase 1: Core Upload & Summarize
+   - Phase 2: Value Investing Analysis
+   - Phase 3: Scoring Framework
+   - Phase 4: Augmented Research
+   - Phase 5: AI Recommendations
+
+### Technical Architecture
+Working with Replit's AI tools, key technical decisions were made:
+
+1. **Stack Selection**:
+   - Python/Flask for robust backend processing
+   - Bootstrap for responsive frontend
+   - PostgreSQL for data persistence
+   - AI Integration via multiple providers
+
+2. **Core Components**:
+   - Document processing pipeline
+   - AI service abstraction layer
+   - Caching system for API efficiency
+   - SEC EDGAR integration
+
+### Implementation Strategy
+The development followed a methodical approach:
+
+1. **Phase 1 Implementation**:
+   - Built core document processing
+   - Integrated AI analysis pipeline
+   - Created insight card system
+   - Implemented caching
+
+2. **Phase 2 Enhancements**:
+   - Added value investing lens
+   - Developed red flag detection
+   - Created biotech analysis mode
+   - Enhanced moat analysis
+
+### Testing & Refinement
+Each feature underwent thorough testing:
+
+1. **Test Cases**:
+   - Document processing accuracy
+   - AI analysis quality
+   - Edge case handling
+   - Performance optimization
+
+2. **Iterative Improvements**:
+   - Enhanced prompt engineering
+   - Optimized processing pipeline
+   - Improved error handling
+   - Added comprehensive logging
+
+This systematic approach, combining thorough planning with iterative development and testing, has resulted in a robust tool that effectively merges value investing principles with modern AI capabilities.
+
 ## Legal Notice
 
 This tool is designed as a research assistant, not a financial advisor. Always perform your own due diligence before making investment decisions.
