@@ -13,7 +13,13 @@ class Base(DeclarativeBase):
 db = SQLAlchemy(model_class=Base)
 # create the app
 app = Flask(__name__)
-app.secret_key = os.environ.get("SESSION_SECRET", "insightlens_secret_key")
+# Use a secure secret key from environment variables without a default fallback
+# This ensures the application won't run with a predictable secret key
+app.secret_key = os.environ.get("SESSION_SECRET")
+if not app.secret_key:
+    app.logger.warning("SESSION_SECRET not set in environment variables. Using a random secret key for this session only.")
+    import secrets
+    app.secret_key = secrets.token_hex(32)
 
 # Configure database
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")

@@ -403,3 +403,44 @@ Key Benefits of Replit Deployment:
    - Consider using a reverse proxy (nginx/Apache)
 
 For most users, we recommend using Replit's deployment options for the best development experience and easiest maintenance.
+
+## Security & Environment Variables
+
+InsightLens uses environment variables to store sensitive information like API keys and database credentials. This ensures that no sensitive data is hardcoded in the codebase.
+
+### Environment Variables Setup
+
+1. **Create Environment File**
+   - Copy the provided `.env.sample` file to `.env` (if running locally)
+   - Fill in your actual API keys and credentials
+   - In Replit, use the Secrets panel to store environment variables
+
+2. **Required Environment Variables**
+   - `SESSION_SECRET`: Used for secure cookie management (required)
+   - `DATABASE_URL`: Database connection string (provided automatically in Replit)
+   - At least one of the following API keys:
+     - `HUGGINGFACE_API_KEY`: For Hugging Face API access (primary)
+     - `OPENAI_API_KEY`: For OpenAI API access (fallback)
+
+3. **Optional Configuration Variables**
+   - `AI_MODEL_TYPE`: Which AI model to use (`huggingface` or `openai`)
+   - `HUGGINGFACE_MODEL`: Specific model to use with Hugging Face (`mistral`, `deepseek`, or `llama3`)
+   - `MONTHLY_API_BUDGET`: Monthly budget limit for API usage in USD (default: 20.0)
+
+4. **Verify Environment Setup**
+   - Run the environment check script to validate your configuration:
+     ```bash
+     python check_env.py
+     ```
+   - This script will verify that all required variables are set and attempt to validate API keys
+   - It will also check database connectivity and provide a summary of your environment configuration
+
+### Security Best Practices
+
+- The application generates a random session key if one is not provided
+- API keys are never logged in their complete form
+- No sensitive information is hardcoded in the codebase
+- All API keys are retrieved from environment variables at runtime
+- Database connection strings are secured using environment variables
+
+A sample environment file (`.env.sample`) is provided as a template, but it does not contain any actual secrets.
