@@ -38,6 +38,9 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB limit
 # Initialize SQLAlchemy with app
 db.init_app(app)
 
+# Configure host and port
+app.config['SERVER_NAME'] = '0.0.0.0:5000'
+
 # Import routes
 from routes import document_routes, insight_routes, edgar_routes, admin_routes, comparison_routes, share_routes, export_routes
 
