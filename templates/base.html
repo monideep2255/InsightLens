@@ -77,11 +77,13 @@
                     <li class="nav-item">
                         <a class="nav-link" href="/#about">About</a>
                     </li>
+                    {% if session.get('admin_logged_in') %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('admin.api_usage') }}">
                             <i class="fas fa-chart-line"></i> API Usage
                         </a>
                     </li>
+                    {% endif %}
                     <li class="nav-item">
                         <button class="btn nav-link" id="theme-toggle">
                             <i class="fas fa-moon" id="dark-icon"></i>
