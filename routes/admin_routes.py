@@ -1,12 +1,44 @@
+
 import os
 import datetime
-from flask import Blueprint, jsonify, render_template, request, redirect, url_for, flash
+from functools import wraps
+from flask import Blueprint, jsonify, render_template, request, redirect, url_for, flash, session
 from models import db, ApiUsage
 
 admin_bp = Blueprint('admin', __name__)
 
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('admin_logged_in'):
+            return redirect(url_for('admin.login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+@admin_bp.route('/admin/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        if (username == os.environ.get('ADMIN_USERNAME') and 
+            password == os.environ.get('ADMIN_PASSWORD')):
+            session['admin_logged_in'] = True
+            flash('Successfully logged in', 'success')
+            return redirect(url_for('admin.api_usage'))
+        else:
+            flash('Invalid credentials', 'danger')
+    
+    return render_template('admin/login.html')
+
+@admin_bp.route('/admin/logout')
+def logout():
+    session.pop('admin_logged_in', None)
+    flash('Successfully logged out', 'success')
+    return redirect(url_for('admin.login'))
 
 @admin_bp.route('/admin/api-usage')
+@admin_required
 def api_usage():
     """Display API usage statistics"""
     # Calculate the monthly cost summary
@@ -60,23 +92,3 @@ def api_usage():
                           usage_status=usage_status,
                           monthly_budget=monthly_budget,
                           recent_requests=recent_requests)
-
-
-@admin_bp.route('/admin/update-budget', methods=['POST'])
-def update_budget():
-    """Update the monthly API budget"""
-    try:
-        new_budget = float(request.form.get('budget', 20.0))
-        if new_budget <= 0:
-            flash('Budget must be greater than zero', 'danger')
-            return redirect(url_for('admin.api_usage'))
-        
-        # For a production app, you would store this in a database settings table
-        # For this demo, we'll just use an environment variable
-        os.environ['MONTHLY_API_BUDGET'] = str(new_budget)
-        
-        flash(f'Monthly budget updated to ${new_budget:.2f}', 'success')
-    except ValueError:
-        flash('Invalid budget value', 'danger')
-    
-    return redirect(url_for('admin.api_usage'))
