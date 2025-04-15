@@ -1,4 +1,3 @@
-
 import os
 import datetime
 from functools import wraps
@@ -20,15 +19,20 @@ def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        
-        if (username == os.environ.get('ADMIN_USERNAME') and 
-            password == os.environ.get('ADMIN_PASSWORD')):
+
+        submitted_username = username.strip() if username else ""
+        submitted_password = password.strip() if password else ""
+        expected_username = os.environ.get('ADMIN_USERNAME', '').strip()
+        expected_password = os.environ.get('ADMIN_PASSWORD', '').strip()
+
+        if (submitted_username == expected_username and 
+            submitted_password == expected_password):
             session['admin_logged_in'] = True
             flash('Successfully logged in', 'success')
             return redirect(url_for('admin.api_usage'))
         else:
             flash('Invalid credentials', 'danger')
-    
+
     return render_template('admin/login.html')
 
 @admin_bp.route('/admin/logout')
@@ -43,15 +47,15 @@ def api_usage():
     """Display API usage statistics"""
     # Calculate the monthly cost summary
     cost_summary = ApiUsage.get_monthly_cost_summary()
-    
+
     # Get detailed usage data for charts
     start_of_month = datetime.datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     usage_data = ApiUsage.query.filter(ApiUsage.timestamp >= start_of_month).order_by(ApiUsage.timestamp).all()
-    
+
     # Format data for charts
     usage_by_day = {}
     usage_by_api = {}
-    
+
     for entry in usage_data:
         # Group by day
         day_key = entry.timestamp.strftime('%Y-%m-%d')
@@ -61,11 +65,11 @@ def api_usage():
                 'requests': 0,
                 'tokens': 0
             }
-        
+
         usage_by_day[day_key]['cost'] += entry.estimated_cost_usd
         usage_by_day[day_key]['requests'] += 1
         usage_by_day[day_key]['tokens'] += entry.prompt_tokens + entry.completion_tokens
-        
+
         # Group by API
         if entry.api_name not in usage_by_api:
             usage_by_api[entry.api_name] = {
@@ -73,18 +77,18 @@ def api_usage():
                 'requests': 0,
                 'tokens': 0
             }
-        
+
         usage_by_api[entry.api_name]['cost'] += entry.estimated_cost_usd
         usage_by_api[entry.api_name]['requests'] += 1
         usage_by_api[entry.api_name]['tokens'] += entry.prompt_tokens + entry.completion_tokens
-    
+
     # Get usage limit status
     monthly_budget = float(os.environ.get('MONTHLY_API_BUDGET', '20.0'))
     usage_status = ApiUsage.check_usage_limits(monthly_budget)
-    
+
     # Get recent requests for the table
     recent_requests = ApiUsage.query.order_by(ApiUsage.timestamp.desc()).limit(50).all()
-    
+
     return render_template('admin/api_usage.html', 
                           cost_summary=cost_summary,
                           usage_by_day=usage_by_day,
