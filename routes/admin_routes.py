@@ -41,6 +41,19 @@ def logout():
     flash('Successfully logged out', 'success')
     return redirect(url_for('admin.login'))
 
+@admin_bp.route('/admin/update-budget', methods=['POST'])
+@admin_required
+def update_budget():
+    """Update the monthly API budget"""
+    try:
+        new_budget = float(request.form.get('budget', 20.0))
+        os.environ['MONTHLY_API_BUDGET'] = str(new_budget)
+        flash('Monthly budget updated successfully', 'success')
+    except (ValueError, TypeError):
+        flash('Invalid budget value', 'danger')
+    
+    return redirect(url_for('admin.api_usage'))
+
 @admin_bp.route('/admin/api-usage')
 @admin_required
 def api_usage():
