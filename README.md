@@ -6,7 +6,7 @@ InsightLens is an AI-powered research assistant designed to help users evaluate 
 
 ## Links to Website & PRD
 - [InsightLens Website](https://insight-lens-monideepchakrab.replit.app/)
-- [PRD](docs/original documents/📏 InsightLens – PRD.pdf)
+- [PRD](docs/original documents/ InsightLens – PRD.pdf)
 
 ## Project Approach & Development Journey
 
