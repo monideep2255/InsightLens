@@ -4,6 +4,7 @@ import logging
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 
 class Base(DeclarativeBase):
@@ -13,6 +14,8 @@ class Base(DeclarativeBase):
 db = SQLAlchemy(model_class=Base)
 # create the app
 app = Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)  # needed for url_for to generate with https
+
 # Use a secure secret key from environment variables without a default fallback
 # This ensures the application won't run with a predictable secret key
 app.secret_key = os.environ.get("SESSION_SECRET")
@@ -38,8 +41,8 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB limit
 # Initialize SQLAlchemy with app
 db.init_app(app)
 
-# Configure host and port
-app.config['SERVER_NAME'] = '0.0.0.0:5000'
+# Remove SERVER_NAME config as it causes issues in Replit
+# The host binding is handled by gunicorn command
 
 # Import routes
 from routes import document_routes, insight_routes, edgar_routes, admin_routes, comparison_routes, share_routes, export_routes

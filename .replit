@@ -1,8 +1,8 @@
-modules = ["python-3.11", "postgresql-16"]
+modules = ["python-3.11", "web", "nodejs-20", "nix"]
 
 [nix]
-channel = "stable-24_05"
-packages = ["bash", "freetype", "glibcLocales"]
+channel = "stable-25_05"
+packages = ["bash", "freetype", "glibcLocales", "openssl", "postgresql"]
 
 [deployment]
 deploymentTarget = "autoscale"
@@ -26,9 +26,6 @@ author = "agent"
 
 [workflows.workflow.metadata]
 agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
