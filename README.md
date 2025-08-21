@@ -223,7 +223,7 @@ Key Features:
 - **Backend**: Python with Flask
 - **Frontend**: Bootstrap 5 with custom CSS
 - **Database**: PostgreSQL
-- **AI Integration**: Hugging Face API (primary), OpenAI API (optional)
+- **AI Integration**: OpenAI API
 - **Document Processing**: PyPDF2, LangChain, BeautifulSoup4
 - **Performance**: Parallel processing, content fingerprinting, caching
 - **SEC Integration**: EDGAR API with multiple extraction methods

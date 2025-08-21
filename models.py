@@ -67,7 +67,7 @@ class Processing(db.Model):
 class ApiUsage(db.Model):
     """Tracks API usage for cost management"""
     id = db.Column(db.Integer, primary_key=True)
-    api_name = db.Column(db.String(64), nullable=False)  # 'openai', 'huggingface', 'deepseek'
+    api_name = db.Column(db.String(64), nullable=False)  # 'openai'
     document_id = db.Column(db.Integer, db.ForeignKey('document.id'), nullable=True)
     prompt_tokens = db.Column(db.Integer, default=0)
     completion_tokens = db.Column(db.Integer, default=0)
@@ -97,7 +97,8 @@ class ApiUsage(db.Model):
     
     @staticmethod
     def calculate_huggingface_cost(prompt_tokens, completion_tokens, model="mistral"):
-        """Calculate the estimated cost for Hugging Face API usage"""
+        """DEPRECATED: Hugging Face support has been removed - returns 0 cost"""
+        return 0.0
         # Approximate pricing for Hugging Face Inference API
         costs = {
             "mistral": {"prompt": 0.0000025, "completion": 0.0000025},  # per token

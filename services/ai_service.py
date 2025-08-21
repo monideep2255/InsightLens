@@ -15,9 +15,8 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-# AI Model Configuration - read from environment
-AI_MODEL_TYPE = os.environ.get("AI_MODEL_TYPE", "huggingface").lower()  # Default to Hugging Face
-HUGGINGFACE_MODEL = os.environ.get("HUGGINGFACE_MODEL", "mistral")  # Default Hugging Face model
+# AI Model Configuration - OpenAI only
+AI_MODEL_TYPE = "openai"  # Only OpenAI is supported now
 
 # Initialize OpenAI client functions
 def get_openai_client(validate=True):
@@ -47,7 +46,7 @@ def get_openai_client(validate=True):
         if validate:
             try:
                 # Make a lightweight request to validate the API key
-                models = client.models.list(limit=1)
+                models = client.models.list()
                 logger.info("OpenAI API key validated successfully")
             except Exception as validation_error:
                 logger.error(f"OpenAI API key validation failed: {str(validation_error)}")
@@ -68,24 +67,13 @@ def get_openai_client(validate=True):
         logger.error(f"Error creating OpenAI client: {str(e)}")
         return None
 
-# Initialize a global variable for reference, but we'll refresh before each use
-if AI_MODEL_TYPE == "openai" and OPENAI_AVAILABLE:
+# Initialize OpenAI setup
+if OPENAI_AVAILABLE:
     OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
     if not OPENAI_API_KEY:
         logger.warning("OPENAI_API_KEY not found in environment variables")
-
-# Initialize Hugging Face setup if selected
-if AI_MODEL_TYPE == "huggingface":
-    HUGGINGFACE_API_KEY = os.environ.get("HUGGINGFACE_API_KEY")
-    if not HUGGINGFACE_API_KEY:
-        logger.warning("HUGGINGFACE_API_KEY not found in environment variables")
-    
-    # Model options for Hugging Face
-    HUGGINGFACE_MODEL_OPTIONS = {
-        "deepseek": "deepseek-ai/deepseek-coder-33b-instruct",
-        "llama3": "meta-llama/Llama-3-8b-chat-hf",
-        "mistral": "mistralai/Mixtral-8x7B-Instruct-v0.1"
-    }
+else:
+    logger.error("OpenAI library is not available. Please install it with: pip install openai")
 
 # Import the new prompt templates from new_prompt_templates.py
 try:
@@ -239,16 +227,14 @@ def generate_insights(content, additional_prompt_templates=None, filter_categori
     except Exception as cache_error:
         logger.warning(f"Error checking cache: {str(cache_error)}")
         
-    # No cached results, generate new insights
+    # No cached results, generate new insights using OpenAI
     try:
-        if AI_MODEL_TYPE == "openai" and OPENAI_AVAILABLE:
+        if OPENAI_AVAILABLE:
             insights = generate_insights_with_openai(content, categories_to_analyze)
-        elif AI_MODEL_TYPE == "huggingface":
-            insights = generate_insights_with_huggingface(content, categories_to_analyze)
         else:
-            logger.error(f"Invalid AI model type: {AI_MODEL_TYPE}")
+            logger.error("OpenAI is not available - please ensure OpenAI library is installed")
             return {
-                category: f"<p>AI model configuration error. Please check server logs.</p>" 
+                category: f"<p>OpenAI is not available. Please install the OpenAI library.</p>" 
                 for category in categories_to_analyze
             }
         
@@ -560,19 +546,6 @@ def generate_insights_with_openai(content, categories_to_analyze=None):
                     error_msg = "OpenAI API key not configured or invalid"
                     logger.error(error_msg)
                     
-                    # Check if Hugging Face is available as fallback
-                    if os.environ.get("HUGGINGFACE_API_KEY"):
-                        logger.info("Attempting to fall back to Hugging Face for this category")
-                        try:
-                            from services.open_source_ai import analyze_with_prompt
-                            fallback_result = analyze_with_prompt(optimized_content, prompt_template.format(content=optimized_content[:10000]))
-                            if "<p>Error calling AI service" not in fallback_result:
-                                logger.info(f"Successfully used Hugging Face as fallback for {category}")
-                                insights[category] = fallback_result
-                                continue
-                        except Exception as hf_error:
-                            logger.error(f"Hugging Face fallback also failed: {str(hf_error)}")
-                    
                     raise Exception(error_msg)
                 
                 # Implement a retry mechanism for transient errors
@@ -697,19 +670,6 @@ def generate_insights_with_openai(content, categories_to_analyze=None):
                 # do not change this unless explicitly requested by the user
                 client = get_openai_client(validate=False)  # Skip validation for fallback to reduce API calls
                 if not client:
-                    # Check if Hugging Face is available as fallback
-                    if os.environ.get("HUGGINGFACE_API_KEY"):
-                        logger.info(f"Attempting to use Hugging Face as final fallback for {category}")
-                        try:
-                            from services.open_source_ai import analyze_with_prompt
-                            fallback_result = analyze_with_prompt(content[:7000], prompt_template.format(content=content[:7000]))
-                            if "<p>Error calling AI service" not in fallback_result:
-                                logger.info(f"Successfully used Hugging Face as final fallback for {category}")
-                                insights[category] = fallback_result
-                                continue
-                        except Exception as hf_error:
-                            logger.error(f"Hugging Face fallback also failed: {str(hf_error)}")
-                    
                     raise Exception("OpenAI API key not configured or invalid")
                 
                 # Use a simplified retry mechanism for the fallback path
@@ -730,23 +690,7 @@ def generate_insights_with_openai(content, categories_to_analyze=None):
                 
                 except Exception as e:
                     logger.error(f"OpenAI fallback failed: {str(e)}")
-                    
-                    # If OpenAI fallback failed, try Hugging Face as a final resort
-                    if os.environ.get("HUGGINGFACE_API_KEY"):
-                        logger.info(f"Attempting emergency Hugging Face fallback for {category}")
-                        try:
-                            from services.open_source_ai import analyze_with_prompt
-                            fallback_result = analyze_with_prompt(content[:7000], prompt_template.format(content=content[:7000]))
-                            if "<p>Error calling AI service" not in fallback_result:
-                                logger.info(f"Successfully used Hugging Face as emergency fallback for {category}")
-                                insights[category] = fallback_result
-                            else:
-                                raise Exception("Hugging Face emergency fallback also failed")
-                        except Exception as hf_error:
-                            logger.error(f"Hugging Face emergency fallback failed: {str(hf_error)}")
-                            insights[category] = f"<p>Unable to generate {category} insight after multiple fallback attempts. Please try again later.</p>"
-                    else:
-                        insights[category] = f"<p>Unable to generate {category} insight. Error: {str(e)}</p>"
+                    insights[category] = f"<p>Unable to generate {category} insight. Error: {str(e)}</p>"
                 
             except Exception as e2:
                 logger.error(f"Error in fallback generation for {category}: {str(e2)}")
@@ -754,50 +698,4 @@ def generate_insights_with_openai(content, categories_to_analyze=None):
     
     return insights
 
-def generate_insights_with_huggingface(content, categories_to_analyze=None):
-    """
-    Generate insights using Hugging Face's API
-    
-    Args:
-        content (str): The document content to analyze
-        categories_to_analyze (list, optional): List of categories to analyze
-    """
-    if categories_to_analyze is None:
-        categories_to_analyze = ['business_summary', 'moat', 'financial', 'management']
-        
-    if not os.environ.get("HUGGINGFACE_API_KEY"):
-        return {category: "<p>Hugging Face API key not configured.</p>" for category in categories_to_analyze}
-    
-    # Import the Hugging Face specific implementation
-    try:
-        from services.open_source_ai import generate_insights_with_huggingface as hf_generate
-        
-        # For now, we'll just pass the content and model - we'll need to update open_source_ai to handle categories
-        # This would require a more extensive refactoring of that module
-        insights = hf_generate(content, HUGGINGFACE_MODEL)
-        
-        # Filter to only include the requested categories
-        filtered_insights = {}
-        for category in categories_to_analyze:
-            if category in insights:
-                filtered_insights[category] = insights[category]
-            elif category in PROMPT_TEMPLATES:
-                # If the category is in the prompt templates but not in the insights,
-                # we need to generate it specifically
-                try:
-                    from services.open_source_ai import analyze_with_prompt
-                    prompt = PROMPT_TEMPLATES[category].format(content=content[:10000])  # Limit content size
-                    result = analyze_with_prompt(content, prompt, HUGGINGFACE_MODEL)
-                    filtered_insights[category] = result
-                    logger.info(f"Generated additional {category} insight with Hugging Face")
-                except Exception as e:
-                    logger.error(f"Error generating {category} insight with Hugging Face: {str(e)}")
-                    filtered_insights[category] = f"<p>Unable to generate {category} insight. Error: {str(e)}</p>"
-                
-        return filtered_insights
-    except ImportError:
-        logger.error("Failed to import open_source_ai module")
-        return {category: "<p>Hugging Face integration not available.</p>" for category in categories_to_analyze}
-    except Exception as e:
-        logger.error(f"Error generating insights with Hugging Face: {str(e)}")
-        return {category: f"<p>Hugging Face processing error: {str(e)}</p>" for category in categories_to_analyze}
+# Hugging Face support has been removed - this application now uses OpenAI only
