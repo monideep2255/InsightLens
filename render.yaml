@@ -1,0 +1,33 @@
+# Render.com Blueprint
+# This file enables one-click deployment to Render
+
+databases:
+  - name: insightlens-db
+    databaseName: insightlens
+    user: insightlens
+    plan: free
+
+services:
+  - type: web
+    name: insightlens
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 4 --timeout 120 main:app
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: insightlens-db
+          property: connectionString
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: MONTHLY_API_BUDGET
+        value: 20.0
+      - key: OPENAI_API_KEY
+        sync: false  # User must set this manually
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: ADMIN_PASSWORD
+        sync: false  # User must set this manually
