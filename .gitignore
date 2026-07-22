@@ -1,0 +1,22 @@
+# Secrets and local environment
+.env
+.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Runtime data (regenerated at runtime; ephemeral on Render free tier)
+uploads/
+cache/
+static/exports/
+
+# OS and editor
+.DS_Store
+*.swp
+.idea/
+.vscode/

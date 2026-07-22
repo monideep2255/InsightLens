@@ -1,0 +1,24 @@
+# Render Blueprint for InsightLens (Flask + gunicorn, Neon Postgres).
+# Secrets are set in the Render dashboard, not here (sync: false).
+services:
+  - type: web
+    name: insightlens
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 1 --timeout 120 main:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ADMIN_USERNAME
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: MONTHLY_API_BUDGET
+        value: "20.0"
