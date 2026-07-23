@@ -376,7 +376,7 @@
                                 <small id="processing-status-text">Extracting document content...</small>
                             </p>
                             <div class="mt-4">
-                                <a href="{{ url_for('insight.cancel_processing_redirect', document_id=document.id) }}" class="btn btn-outline-danger">
+                                <a href="{{ url_for('insight_routes.cancel_processing_redirect', document_id=document.id) }}" class="btn btn-outline-danger">
                                     <i class="fas fa-times me-1"></i> Cancel
                                 </a>
                             </div>

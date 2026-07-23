@@ -8,7 +8,7 @@
         <div class="col-12">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ url_for('document.index') }}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('document_routes.index') }}">Home</a></li>
                     <li class="breadcrumb-item"><a href="{{ url_for('comparison.comparison_page') }}">Document Comparison</a></li>
                     <li class="breadcrumb-item active" aria-current="page">Results</li>
                 </ol>
@@ -43,7 +43,7 @@
                                             <br><small class="text-muted">Company: {{ document.company_name }}</small>
                                         {% endif %}
                                     </p>
-                                    <a href="{{ url_for('insight.show_insights', document_id=document.id) }}" class="btn btn-sm btn-outline-secondary">View Original Analysis</a>
+                                    <a href="{{ url_for('insight_routes.show_insights', document_id=document.id) }}" class="btn btn-sm btn-outline-secondary">View Original Analysis</a>
                                 </div>
                             </div>
                         </div>
