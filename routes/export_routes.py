@@ -24,15 +24,14 @@ def export_to_pdf(document_id):
     # Get document insights
     insights = Insight.query.filter_by(document_id=document.id).all()
     
-    # Generate PDF export
+    # Generate PDF export. create_pdf_export returns a path relative to the
+    # static directory (for example "exports/insights_1_...pdf").
     pdf_path = create_pdf_export(document, insights)
-    
-    # Determine the directory name (exports)
-    dir_name = os.path.dirname(pdf_path)
-    file_name = os.path.basename(pdf_path)
-    
-    # Serve the file
-    return send_from_directory(dir_name, file_name, as_attachment=True)
+
+    # Serve from the app's absolute static folder so the lookup does not depend
+    # on the current working directory (gunicorn on Render runs from repo root,
+    # but the served path must resolve to static/exports either way).
+    return send_from_directory(current_app.static_folder, pdf_path, as_attachment=True)
 
 
 @export_bp.route('/api/document/<int:document_id>/export/pdf', methods=['POST'])
