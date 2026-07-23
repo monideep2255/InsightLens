@@ -1,12 +1,14 @@
-*Last Updated: August 21, 2025*
+# InsightLens - AI-powered company research assistant
 
-# InsightLens - AI-Powered Company Research Assistant
+Live app: https://insightlens-wz4n.onrender.com
 
-InsightLens is an AI-powered research assistant designed to help users evaluate companies through the lens of value investing principles (Benjamin Graham/Warren Buffett approach). The system processes financial reports from the SEC EDGAR database or uploaded PDF documents and generates structured insight cards with analysis on various aspects of a company, including Business Summary, Moat & Edge, Basic Financial Health, and Management Snapshot. Featuring direct access to 10-K filings for the "Magnificent 7" tech companies and robust caching for efficient API usage.
+> Migration note (July 22, 2026): InsightLens now runs on Render as a web service with a Neon Postgres database, and uses OpenAI as its single AI provider. It was previously hosted on Replit and shipped with a dormant Hugging Face code path. Any Replit-specific or Hugging Face-specific steps below are historical and kept for context. To try the live app, see [TESTING_GUIDE.md](TESTING_GUIDE.md).
 
-## Links to Website & PRD
-- [InsightLens Website (Coming Soon!)]()
+InsightLens is an AI-powered research assistant designed to help users evaluate companies through the lens of value investing principles (Benjamin Graham and Warren Buffett approach). The system processes financial reports from the SEC EDGAR database or uploaded PDF documents and generates structured insight cards with analysis on various aspects of a company, including business summary, moat and edge, basic financial health, and management snapshot. It features direct access to 10-K filings for the "Magnificent 7" tech companies and robust caching for efficient API usage.
+
+## Links
 - [PRD](docs/original%20documents/%20InsightLens%20%E2%80%93%20PRD.pdf)
+- [Testing guide](TESTING_GUIDE.md)
 
 ## Project Approach & Development Journey
 
@@ -98,7 +100,7 @@ This tool is designed as a research assistant, not a financial advisor. Always p
    - Headers management for SEC API compliance
 
 3. **AI Analysis**
-   - Hugging Face API integration (primary)
+   - OpenAI API integration (the single live provider)
    - Custom prompts for each insight category
    - Structured HTML output for insights
 
@@ -220,14 +222,14 @@ Key Features:
 
 ## Technical Stack
 
-- **Backend**: Python with Flask
-- **Frontend**: Bootstrap 5 with custom CSS
-- **Database**: PostgreSQL
-- **AI Integration**: OpenAI API
-- **Document Processing**: PyPDF2, LangChain, BeautifulSoup4
-- **Performance**: Parallel processing, content fingerprinting, caching
-- **SEC Integration**: EDGAR API with multiple extraction methods
-- **Deployment**: Replit
+- Backend: Python with Flask, served by gunicorn
+- Frontend: Bootstrap 5 with custom CSS, server-rendered Jinja2 templates
+- Database: Neon Postgres
+- AI integration: OpenAI API (single provider)
+- Document processing: PyPDF2, LangChain, BeautifulSoup4
+- Performance: parallel processing, content fingerprinting, caching
+- SEC integration: EDGAR API with multiple extraction methods
+- Hosting: Render web service (free tier)
 
 ## Project Structure
 
@@ -301,26 +303,20 @@ Key Features:
 
 2. **Install Dependencies**
    ```bash
-   pip install -r sample_requirements.txt
+   pip install -r requirements.txt
    ```
 
 3. **Set up environment variables**
-   Create a `.env` file with:
+   Copy `.env.example` to `.env` and fill in real values:
    ```
-   FLASK_SECRET_KEY=your_random_secret_key
-   DATABASE_URL=postgresql://username:password@localhost:5432/insightlens
-
-   # Choose ONE AI provider:
-
-   # Option 1: Hugging Face (recommended)
-   HUGGINGFACE_API_KEY=your_huggingface_api_key
-   AI_MODEL_TYPE=huggingface
-   HUGGINGFACE_MODEL=mistral  # Options: mistral, llama3, deepseek
-
-   # Option 2: OpenAI
-   # OPENAI_API_KEY=your_openai_api_key
-   # AI_MODEL_TYPE=openai
+   SESSION_SECRET=your_random_secret_key
+   DATABASE_URL=postgresql://username:password@host/dbname?sslmode=require
+   OPENAI_API_KEY=sk-your_openai_api_key
+   ADMIN_USERNAME=admin
+   ADMIN_PASSWORD=your_secure_password
+   MONTHLY_API_BUDGET=20.0
    ```
+   OpenAI is the single live provider. Do not set `HUGGINGFACE_API_KEY`: it activates a dormant, broken code path. Leaving it unset routes all analysis through OpenAI.
 
 4. **Set up PostgreSQL**
    - Create a database named 'insightlens'
@@ -343,42 +339,30 @@ Key Features:
 
 ## Deployment
 
-For deployment, we recommend using Replit's deployment options:
+The live app runs on Render (web service, free tier) with a Neon Postgres database. The deployment is defined by `render.yaml` in the repository root.
 
-1. **Using Replit's Autoscale Deployment**
-   - Click the "Deploy" button in your Repl
-   - Select "Autoscale" deployment type
-   - Configure deployment:
-     - Machine: 1vCPU, 2 GiB RAM (default)
-     - Max machines: 3 (default)
-     - Run command: `gunicorn --bind 0.0.0.0:5000 main:app`
-   - Click "Deploy" to publish your application
+1. **Render web service**
+   - Create a Neon Postgres database and copy its connection string (include `sslmode=require`).
+   - In Render, create a new web service from this repository. Render reads `render.yaml`.
+   - Build command: `pip install -r requirements.txt`
+   - Start command: `gunicorn --bind 0.0.0.0:$PORT --workers 1 --timeout 120 main:app`
+   - Set the `sync: false` environment variables in the Render dashboard: `DATABASE_URL`, `OPENAI_API_KEY`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`. `SESSION_SECRET` is generated by Render.
+   - The database schema auto-creates on first boot (`db.create_all()` runs at import time), so no separate migration step is needed.
 
-2. **Using Replit's Reserved VM**
-   For long-running, compute-intensive workloads:
-   - Click "Deploy" in your Repl
-   - Select "Reserved VM"
-   - Configure VM size and run command
-   - Deploy your application
+2. **Cold starts**
+   - On the free tier the service sleeps after inactivity. The first request after a sleep can take a few seconds and may transiently 404 while the process boots. A second request succeeds.
 
-Key Benefits of Replit Deployment:
-- Automatic HTTPS/SSL
-- Built-in environment management
-- Automatic package installation
-- Integrated deployment monitoring
-- Easy scaling capabilities
-- Zero-configuration PostgreSQL database
-
-### Alternative Deployment Options
+### Alternative deployment options (historical)
 
 1. **Traditional Server Deployment**
    ```bash
    # Install dependencies
-   pip install -r sample_requirements.txt
+   pip install -r requirements.txt
 
    # Set up environment variables
-   export FLASK_SECRET_KEY=your_secret_key
+   export SESSION_SECRET=your_secret_key
    export DATABASE_URL=postgresql://username:password@localhost:5432/insightlens
+   export OPENAI_API_KEY=sk-your_openai_api_key
 
    # Initialize database
    python recreate_db.py
@@ -406,7 +390,7 @@ Key Benefits of Replit Deployment:
    - Use HTTPS in production
    - Consider using a reverse proxy (nginx/Apache)
 
-For most users, we recommend using Replit's deployment options for the best development experience and easiest maintenance.
+The live deployment uses Render with Neon Postgres, described in the Deployment section above.
 
 ## Security & Environment Variables
 
@@ -415,21 +399,19 @@ InsightLens uses environment variables to store sensitive information like API k
 ### Environment Variables Setup
 
 1. **Create Environment File**
-   - Copy the provided `.env.sample` file to `.env` (if running locally)
+   - Copy the provided `.env.example` file to `.env` (if running locally)
    - Fill in your actual API keys and credentials
-   - In Replit, use the Secrets panel to store environment variables
+   - On Render, set the `sync: false` variables in the dashboard (see the Deployment section)
 
 2. **Required Environment Variables**
-   - `SESSION_SECRET`: Used for secure cookie management (required)
-   - `DATABASE_URL`: Database connection string (provided automatically in Replit)
-   - At least one of the following API keys:
-     - `HUGGINGFACE_API_KEY`: For Hugging Face API access (primary)
-     - `OPENAI_API_KEY`: For OpenAI API access (fallback)
+   - `SESSION_SECRET`: Used for secure cookie management (required; generated automatically on Render)
+   - `DATABASE_URL`: Neon Postgres connection string, including `sslmode=require`
+   - `OPENAI_API_KEY`: OpenAI API access (the single live provider)
+   - `ADMIN_USERNAME` and `ADMIN_PASSWORD`: login for the API cost dashboard
 
 3. **Optional Configuration Variables**
-   - `AI_MODEL_TYPE`: Which AI model to use (`huggingface` or `openai`)
-   - `HUGGINGFACE_MODEL`: Specific model to use with Hugging Face (`mistral`, `deepseek`, or `llama3`)
    - `MONTHLY_API_BUDGET`: Monthly budget limit for API usage in USD (default: 20.0)
+   - Do not set `HUGGINGFACE_API_KEY`. It activates a dormant, broken Hugging Face code path. Leaving it unset routes all analysis through OpenAI.
 
 4. **Verify Environment Setup**
    - Run the environment check script to validate your configuration:
